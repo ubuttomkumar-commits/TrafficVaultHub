@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { DataFlowNetwork } from "../components/DataFlowNetwork";
 import styles from "./LandingPage.module.css";
 
 const PUBLISHER_PROBLEMS = [
@@ -176,6 +177,9 @@ export function LandingPage() {
             </div>
 
             <div className={styles.heroVisual} aria-label="Illustrative dashboard mockup">
+              <div className={styles.networkLayer} aria-hidden>
+                <DataFlowNetwork />
+              </div>
               <div className={styles.mockFrame}>
                 <div className={styles.mockBar}>
                   <span />
