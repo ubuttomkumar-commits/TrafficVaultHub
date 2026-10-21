@@ -6,6 +6,7 @@ import { CategoriesPage } from "./pages/CategoriesPage";
 import { OffersPage } from "./pages/OffersPage";
 import { LoginPage } from "./pages/LoginPage";
 import { EarningsPage } from "./pages/EarningsPage";
+import { OfferCapsPage } from "./pages/OfferCapsPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 
 export function App() {
@@ -16,6 +17,7 @@ export function App() {
         <Route path="/offers" element={<OffersPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/earnings" element={<EarningsPage />} />
+        <Route path="/offer-caps" element={<OfferCapsPage />} />
         <Route path="/categories" element={<CategoriesPage />} />
         <Route path="/health" element={<HealthPage />} />
         <Route path="*" element={<NotFoundPage />} />

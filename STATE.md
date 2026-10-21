@@ -356,3 +356,11 @@ See `docs/PHASE_A_AUDIT.md`.
 - GET /api/v1/t/:code returns 429 when click cap reached
 - CAP_REACHED pause includes click exhaustion
 - Deployed ba42042c
+
+---
+
+## 22. Click caps UI + API (2026-10-21)
+
+- GET/PUT /api/v1/offers/:offerId/caps
+- Pages: /offer-caps — load/save daily & lifetime click limits
+- Role: advertiser member or platform ops
