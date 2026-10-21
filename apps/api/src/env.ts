@@ -16,6 +16,9 @@ export type Env = {
   // Queues
   CONVERSION_QUEUE: Queue;
 
+  // Durable Objects — per-offer caps
+  CAPS: DurableObjectNamespace;
+
   // Vars
   ENVIRONMENT: string;
   API_VERSION: string;

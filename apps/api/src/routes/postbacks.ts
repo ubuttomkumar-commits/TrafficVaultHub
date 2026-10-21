@@ -272,7 +272,7 @@ async function handlePostback(c: {
   const conversionId = crypto.randomUUID();
   const historyId = crypto.randomUUID();
 
-  const cap = await reserveConversionCap(c.env.DB, {
+  const cap = await reserveConversionCap(c.env, {
     offerId: click.offer_id,
     organizationId: click.offer_organization_id,
     commissionMinor,

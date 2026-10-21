@@ -62,6 +62,18 @@ crons = [
 # ---------------------------------------------------------------------------
 # Vars (non-secret)
 # ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# Durable Objects — offer conversion/budget caps
+# ---------------------------------------------------------------------------
+[[durable_objects.bindings]]
+name = "CAPS"
+class_name = "OfferCapDO"
+
+[[migrations]]
+tag = "v1_offer_cap_do"
+new_sqlite_classes = ["OfferCapDO"]
+
 [vars]
 ENVIRONMENT = "development"
 API_VERSION = "v1"

@@ -24,13 +24,13 @@ This is **not** a claim of full production readiness. PRD §21 requires verifica
 | Tracking link create / list | Done |
 | Frontend: Home, Offers, Categories, Health, Login, Earnings | Done on Pages |
 | Cloudflare Worker + Pages deploy | Done (dev bindings) |
-| Offer cap counters (D1 atomic) | Done — residual: not Durable Objects |
+| Offer cap counters (D1 atomic) | Done — fallback when DO errors |
 
 ## Partial / missing (do not mark complete)
 
 | PRD area | Gap |
 |----------|-----|
-| Durable Object caps | Partial — D1 offer_cap_counters used; DO not yet |
+| Durable Object caps | Done — OfferCapDO (CAPS) + D1 flush fallback |
 | Full RBAC on every route | Role checks on some routes only |
 | Restricted-category compliance queue | Schema exists; workflow UI/API incomplete |
 | Fraud Quality Shield automation | Tables only |

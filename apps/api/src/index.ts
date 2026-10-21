@@ -91,3 +91,5 @@ app.notFound((c) => {
 });
 
 export default app;
+
+export { OfferCapDO } from "./durable/offer-cap";

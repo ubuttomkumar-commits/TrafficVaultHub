@@ -336,3 +336,13 @@ See `docs/PHASE_A_AUDIT.md`.
 - Reject postback with reason cap_reached; pause LIVE → CAP_REACHED
 - Residual risk: multi-region races without Durable Objects
 - Deployed 731c31e0
+
+---
+
+## 20. Durable Object offer caps (2026-10-21)
+
+- Class OfferCapDO, binding CAPS, migration new_sqlite_classes (free plan)
+- idFromName(offerId) — serialized per-offer reservation
+- Hydrates from D1; flushes counters after reserve
+- Fallback to D1 atomic UPDATE if DO call fails
+- Deployed 6b078298 with CAPS binding live

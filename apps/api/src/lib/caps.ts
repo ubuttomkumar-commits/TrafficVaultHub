@@ -1,6 +1,6 @@
 /**
- * Offer cap checks against existing offer_cap_counters + offer_versions limits.
- * D1 single-statement increments — not a Durable Object; document residual race risk.
+ * Offer cap reservation: prefers Durable Object CAPS when bound,
+ * falls back to D1 atomic UPDATE.
  */
 
 export type CapCheckResult =
@@ -8,11 +8,7 @@ export type CapCheckResult =
   | { ok: false; reason: string; capType?: string };
 
 function utcDayKey(d = new Date()): string {
-  return d.toISOString().slice(0, 10); // YYYY-MM-DD
-}
-
-function utcMonthKey(d = new Date()): string {
-  return d.toISOString().slice(0, 7); // YYYY-MM
+  return d.toISOString().slice(0, 10);
 }
 
 type VersionCaps = {
@@ -22,20 +18,16 @@ type VersionCaps = {
   currency: string;
 };
 
-/**
- * Ensure counter rows exist from offer_versions limits, then try increment.
- * Returns not ok if limit would be exceeded.
- */
-export async function reserveConversionCap(
+type EnvWithCaps = {
+  DB: D1Database;
+  CAPS?: DurableObjectNamespace;
+};
+
+async function loadVersionCaps(
   db: D1Database,
-  args: {
-    offerId: string;
-    organizationId: string;
-    commissionMinor: number;
-    currency: string;
-  }
-): Promise<CapCheckResult> {
-  const ver = await db
+  offerId: string
+): Promise<VersionCaps | null> {
+  return db
     .prepare(
       `SELECT daily_conversion_cap, total_conversion_cap, budget_minor, currency
        FROM offer_versions ov
@@ -43,11 +35,70 @@ export async function reserveConversionCap(
        WHERE o.id = ?
        LIMIT 1`
     )
-    .bind(args.offerId)
+    .bind(offerId)
     .first<VersionCaps>();
+}
 
-  if (!ver) return { ok: true };
+/** DO-backed reserve when CAPS binding exists */
+async function reserveViaDO(
+  env: EnvWithCaps,
+  args: {
+    offerId: string;
+    organizationId: string;
+    commissionMinor: number;
+    currency: string;
+  },
+  ver: VersionCaps
+): Promise<CapCheckResult> {
+  if (!env.CAPS) return { ok: true };
 
+  const id = env.CAPS.idFromName(args.offerId);
+  const stub = env.CAPS.get(id);
+  const limits = {
+    dailyConversion: ver.daily_conversion_cap,
+    totalConversion: ver.total_conversion_cap,
+    budgetMinor: ver.budget_minor,
+    currency: ver.currency || args.currency,
+  };
+
+  const res = await stub.fetch("https://cap/reserve", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      offerId: args.offerId,
+      organizationId: args.organizationId,
+      limits,
+      commissionMinor: args.commissionMinor,
+    }),
+  });
+
+  const body = (await res.json()) as {
+    ok: boolean;
+    reason?: string;
+    capType?: string;
+  };
+
+  if (!body.ok) {
+    return {
+      ok: false,
+      reason: body.reason ?? "cap_reached",
+      capType: body.capType,
+    };
+  }
+  return { ok: true };
+}
+
+/** D1 fallback (previous behavior) */
+async function reserveViaD1(
+  db: D1Database,
+  args: {
+    offerId: string;
+    organizationId: string;
+    commissionMinor: number;
+    currency: string;
+  },
+  ver: VersionCaps
+): Promise<CapCheckResult> {
   const day = utcDayKey();
   const checks: {
     capType: string;
@@ -85,7 +136,6 @@ export async function reserveConversionCap(
   for (const c of checks) {
     if (c.limit == null) continue;
 
-    // Upsert counter with limit_value
     await db
       .prepare(
         `INSERT INTO offer_cap_counters (
@@ -107,7 +157,6 @@ export async function reserveConversionCap(
       )
       .run();
 
-    // Atomic increment only if room remains
     const result = await db
       .prepare(
         `UPDATE offer_cap_counters
@@ -131,20 +180,51 @@ export async function reserveConversionCap(
       )
       .run();
 
-    const changes = result.meta?.changes ?? 0;
-    if (changes === 0) {
-      return {
-        ok: false,
-        reason: "cap_reached",
-        capType: c.capType,
-      };
+    if ((result.meta?.changes ?? 0) === 0) {
+      return { ok: false, reason: "cap_reached", capType: c.capType };
     }
   }
 
   return { ok: true };
 }
 
-/** Pause offer when any lifetime/day counter is exhausted */
+export async function reserveConversionCap(
+  env: EnvWithCaps,
+  args: {
+    offerId: string;
+    organizationId: string;
+    commissionMinor: number;
+    currency: string;
+  }
+): Promise<CapCheckResult> {
+  const ver = await loadVersionCaps(env.DB, args.offerId);
+  if (!ver) return { ok: true };
+
+  if (env.CAPS) {
+    try {
+      return await reserveViaDO(env, args, ver);
+    } catch (err) {
+      console.warn("DO cap reserve failed, falling back to D1", err);
+      return reserveViaD1(env.DB, args, ver);
+    }
+  }
+
+  return reserveViaD1(env.DB, args, ver);
+}
+
+/** @deprecated pass env instead of db — kept for call-site migration */
+export async function reserveConversionCapDb(
+  db: D1Database,
+  args: {
+    offerId: string;
+    organizationId: string;
+    commissionMinor: number;
+    currency: string;
+  }
+): Promise<CapCheckResult> {
+  return reserveConversionCap({ DB: db }, args);
+}
+
 export async function pauseOfferIfCapsExhausted(
   db: D1Database,
   offerId: string,
