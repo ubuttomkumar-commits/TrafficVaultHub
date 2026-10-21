@@ -1,0 +1,110 @@
+.shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 0.875rem 1.75rem;
+  background: var(--color-bg-glass);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--color-border);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--color-text-primary);
+  text-decoration: none;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.logo:hover {
+  text-decoration: none;
+  color: var(--color-accent-cyan);
+}
+
+.logoMark {
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 6px;
+  background: linear-gradient(
+    135deg,
+    var(--color-accent-cyan),
+    var(--color-accent-violet)
+  );
+  box-shadow: 0 0 12px var(--color-accent-glow);
+}
+
+.logoText {
+  font-size: 1.05rem;
+}
+
+.tagline {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  display: none;
+}
+
+@media (min-width: 720px) {
+  .tagline {
+    display: inline;
+  }
+}
+
+.nav {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.navLink,
+.navLinkActive {
+  padding: 0.4rem 0.75rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  transition: color 0.15s, background 0.15s;
+}
+
+.navLink:hover {
+  color: var(--color-text-primary);
+  background: rgba(148, 163, 184, 0.08);
+  text-decoration: none;
+}
+
+.navLinkActive {
+  color: var(--color-accent-cyan);
+  background: rgba(34, 211, 238, 0.1);
+}
+
+.main {
+  flex: 1;
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 3rem;
+}
+
+.footer {
+  padding: 1.25rem 1.5rem;
+  border-top: 1px solid var(--color-border);
+  text-align: center;
+  font-size: 0.8rem;
+}

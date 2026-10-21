@@ -1,0 +1,5 @@
+# Copy to apps/api/.dev.vars for local wrangler dev (NEVER commit .dev.vars)
+# CLOUDFLARE_API_TOKEN=  # prefer env var, not this file
+# SESSION_SECRET=generate-a-long-random-string
+# TURNSTILE_SECRET_KEY=
+# JWT_SECRET=

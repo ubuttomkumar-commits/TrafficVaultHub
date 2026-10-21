@@ -1,0 +1,113 @@
+# TrafficVaultHub — Cloudflare Workers configuration
+# Bound to existing Cloudflare account resources (discovered 2026-10-21).
+# DO NOT put API tokens or secrets in this file.
+
+name = "trafficvaulthub"
+main = "src/index.ts"
+compatibility_date = "2025-02-14"
+compatibility_flags = ["nodejs_compat"]
+account_id = "fa6ffb91f755b6a7066cd0cf4ce70556"
+
+# ---------------------------------------------------------------------------
+# D1 Database — use existing trafficvaulthub-dev
+# Production: f39fc28f-40ba-49c2-a26c-546eaa9b2352 (trafficvaulthub-production)
+# Staging:    36c9817c-899d-4bb0-846a-a0b393326d6e (trafficvaulthub-staging)
+# ---------------------------------------------------------------------------
+[[d1_databases]]
+binding = "DB"
+database_name = "trafficvaulthub-dev"
+database_id = "1525d448-4367-402e-af19-cf4a26022f05"
+migrations_dir = "../../migrations"
+
+# ---------------------------------------------------------------------------
+# KV (cache / config only — never sole authority for financial balances)
+# ---------------------------------------------------------------------------
+[[kv_namespaces]]
+binding = "KV"
+id = "1fa2b2d7578b4f1e846c0c6a4cbdb710"
+preview_id = "1fa2b2d7578b4f1e846c0c6a4cbdb710"
+
+# ---------------------------------------------------------------------------
+# R2 — not enabled on this account yet (enable in Cloudflare Dashboard)
+# Uncomment after enabling R2 and creating buckets.
+# ---------------------------------------------------------------------------
+# [[r2_buckets]]
+# binding = "R2"
+# bucket_name = "trafficvaulthub-evidence"
+# preview_bucket_name = "trafficvaulthub-evidence-preview"
+
+# ---------------------------------------------------------------------------
+# Queues — existing trafficvaulthub-events-dev
+# ---------------------------------------------------------------------------
+[[queues.producers]]
+binding = "CONVERSION_QUEUE"
+queue = "trafficvaulthub-events-dev"
+
+# Consumer optional until conversion pipeline is wired
+# [[queues.consumers]]
+# queue = "trafficvaulthub-events-dev"
+# max_batch_size = 10
+# max_batch_timeout = 5
+# max_retries = 5
+
+# ---------------------------------------------------------------------------
+# Cron Triggers
+# ---------------------------------------------------------------------------
+[triggers]
+crons = [
+  "0 * * * *",
+  "0 2 * * *",
+]
+
+# ---------------------------------------------------------------------------
+# Vars (non-secret)
+# ---------------------------------------------------------------------------
+[vars]
+ENVIRONMENT = "development"
+API_VERSION = "v1"
+
+# Secrets — set only via: wrangler secret put <NAME>
+# SESSION_SECRET, TURNSTILE_SECRET_KEY, JWT_SECRET
+
+[observability]
+enabled = true
+head_sampling_rate = 1
+
+# ---------------------------------------------------------------------------
+# Environment overrides
+# ---------------------------------------------------------------------------
+[env.staging]
+name = "trafficvaulthub-staging"
+vars = { ENVIRONMENT = "staging", API_VERSION = "v1" }
+
+[[env.staging.d1_databases]]
+binding = "DB"
+database_name = "trafficvaulthub-staging"
+database_id = "36c9817c-899d-4bb0-846a-a0b393326d6e"
+migrations_dir = "../../migrations"
+
+[[env.staging.kv_namespaces]]
+binding = "KV"
+id = "f636ad4c89b04159a4d15c474ebc5ccf"
+
+[[env.staging.queues.producers]]
+binding = "CONVERSION_QUEUE"
+queue = "trafficvaulthub-events-staging"
+
+[env.production]
+name = "trafficvaulthub"
+vars = { ENVIRONMENT = "production", API_VERSION = "v1" }
+
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "trafficvaulthub-production"
+database_id = "f39fc28f-40ba-49c2-a26c-546eaa9b2352"
+migrations_dir = "../../migrations"
+
+[[env.production.kv_namespaces]]
+binding = "KV"
+id = "b1aab1d8918c4500b7f67afbc209dcc2"
+
+[[env.production.queues.producers]]
+binding = "CONVERSION_QUEUE"
+queue = "trafficvaulthub-events-production"

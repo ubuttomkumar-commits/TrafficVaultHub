@@ -1,0 +1,30 @@
+{
+  "name": "trafficvaulthub",
+  "version": "0.1.0",
+  "private": true,
+  "description": "TrafficVaultHub — Universal CPA Network. Every Click Accounted For. Every Decision Explained. Every Valid Payout Tracked.",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspaces --if-present",
+    "dev:web": "npm run dev -w @trafficvaulthub/web",
+    "dev:api": "npm run dev -w @trafficvaulthub/api",
+    "build": "npm run build --workspaces --if-present",
+    "build:web": "npm run build -w @trafficvaulthub/web",
+    "build:api": "npm run build -w @trafficvaulthub/api",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "db:migrate:local": "npm run db:migrate:local -w @trafficvaulthub/api",
+    "db:migrate:remote": "npm run db:migrate:remote -w @trafficvaulthub/api",
+    "deploy": "npm run deploy -w @trafficvaulthub/api",
+    "cf-typegen": "npm run cf-typegen -w @trafficvaulthub/api"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "author": "TrafficVaultHub",
+  "license": "UNLICENSED"
+}
