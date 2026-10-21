@@ -364,3 +364,13 @@ See `docs/PHASE_A_AUDIT.md`.
 - GET/PUT /api/v1/offers/:offerId/caps
 - Pages: /offer-caps — load/save daily & lifetime click limits
 - Role: advertiser member or platform ops
+
+---
+
+## 23. Premium marketing landing (2026-10-21)
+
+- Full dark/glass landing at /
+- Sections: hero, problems/solutions, bento features, how-it-works, payout, trust, differentiators, CTA, footer
+- No fabricated metrics; illustrative dashboard labeled as such
+- SEO meta + OG/Twitter; prefers-reduced-motion
+- Live: https://trafficvaulthub.pages.dev

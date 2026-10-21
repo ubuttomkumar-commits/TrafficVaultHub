@@ -1,6 +1,6 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
 import { Shell } from "./components/Shell";
-import { HomePage } from "./pages/HomePage";
+import { LandingPage } from "./pages/LandingPage";
 import { HealthPage } from "./pages/HealthPage";
 import { CategoriesPage } from "./pages/CategoriesPage";
 import { OffersPage } from "./pages/OffersPage";
@@ -9,11 +9,21 @@ import { EarningsPage } from "./pages/EarningsPage";
 import { OfferCapsPage } from "./pages/OfferCapsPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 
-export function App() {
+function AppRoutes() {
+  const location = useLocation();
+  const isMarketing = location.pathname === "/";
+
+  if (isMarketing) {
+    return (
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+      </Routes>
+    );
+  }
+
   return (
     <Shell>
       <Routes>
-        <Route path="/" element={<HomePage />} />
         <Route path="/offers" element={<OffersPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/earnings" element={<EarningsPage />} />
@@ -24,4 +34,8 @@ export function App() {
       </Routes>
     </Shell>
   );
+}
+
+export function App() {
+  return <AppRoutes />;
 }
