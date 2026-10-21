@@ -13,6 +13,8 @@ import { healthRoutes } from "./routes/health";
 import { categoryRoutes } from "./routes/categories";
 import { offerRoutes } from "./routes/offers";
 import { authRoutes } from "./routes/auth";
+import { publisherRoutes } from "./routes/publisher";
+import { trackingRoutes } from "./routes/tracking";
 import { errorHandler } from "./middleware/error-handler";
 import { correlationId } from "./middleware/correlation-id";
 import { optionalAuth } from "./middleware/auth";
@@ -54,6 +56,8 @@ api.route("/health", healthRoutes);
 api.route("/auth", authRoutes);
 api.route("/offer-categories", categoryRoutes);
 api.route("/offers", offerRoutes);
+api.route("/publisher", publisherRoutes);
+api.route("/t", trackingRoutes);
 
 app.route(API_PREFIX, api);
 

@@ -232,3 +232,23 @@ See `docs/PHASE_A_AUDIT.md`.
 ### Not done
 - Public registration, MFA, password reset flows
 - Worker deploy to Cloudflare
+
+---
+
+## 11. Publisher earnings + click tracking + deploy (2026-10-21)
+
+### APIs
+- `GET /api/v1/publisher/earnings` — journal-based totals; pending ≠ payable
+- `GET /api/v1/publisher/conversions` — lifecycle-labeled conversion list
+- `GET /api/v1/t/:code` — click record + 302 to offer destination
+
+### Deploy
+- Worker: `https://trafficvaulthub.uttombarmon45.workers.dev`
+- Bound to trafficvaulthub-dev D1, KV, events-dev queue
+- Health OK; 56 categories; bootstrap + login verified live
+
+### Residual
+- S2S postback processor not yet
+- Advertiser campaign APIs not yet
+- No production ENVIRONMENT deploy
+- Bootstrap admin password must be rotated by operator
