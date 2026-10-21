@@ -288,3 +288,14 @@ See `docs/PHASE_A_AUDIT.md`.
 - Lifecycle → REVERSED; idempotent ledger:reversal:{id}
 - Allowed reasons: REFUND, CHARGEBACK, FRAUD_CONFIRMED, ADVERTISER_DISPUTE, DUPLICATE_DETECTED_LATE, COMPLIANCE_VIOLATION, MANUAL_CORRECTION
 - Deployed version 4cea4396
+
+---
+
+## 15. Advertiser funding (2026-10-21)
+
+- `GET /api/v1/advertiser/balance?organizationId=`
+- `GET /api/v1/advertiser/funding?organizationId=`
+- `POST /api/v1/advertiser/funding` — FUNDING journal, ADVERTISER_PREPAID account ensure
+- Idempotent; platform finance/ops or advertiser owner/admin/billing roles
+- Explicit note: not payment-provider proof
+- Deployed version a59526e1

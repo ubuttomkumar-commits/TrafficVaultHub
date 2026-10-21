@@ -17,6 +17,7 @@ import { publisherRoutes } from "./routes/publisher";
 import { trackingRoutes } from "./routes/tracking";
 import { postbackRoutes } from "./routes/postbacks";
 import { conversionRoutes } from "./routes/conversions";
+import { advertiserRoutes } from "./routes/advertiser";
 import { errorHandler } from "./middleware/error-handler";
 import { correlationId } from "./middleware/correlation-id";
 import { optionalAuth } from "./middleware/auth";
@@ -62,6 +63,7 @@ api.route("/publisher", publisherRoutes);
 api.route("/t", trackingRoutes);
 api.route("/postbacks", postbackRoutes);
 api.route("/conversions", conversionRoutes);
+api.route("/advertiser", advertiserRoutes);
 
 app.route(API_PREFIX, api);
 
