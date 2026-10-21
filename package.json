@@ -8,10 +8,10 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "npm run dev --workspaces --if-present",
+    "dev": "npm run dev -w @trafficvaulthub/web",
     "dev:web": "npm run dev -w @trafficvaulthub/web",
     "dev:api": "npm run dev -w @trafficvaulthub/api",
-    "build": "npm run build --workspaces --if-present",
+    "build": "npm run build -w @trafficvaulthub/shared && npm run build -w @trafficvaulthub/web",
     "build:web": "npm run build -w @trafficvaulthub/web",
     "build:api": "npm run build -w @trafficvaulthub/api",
     "typecheck": "npm run typecheck --workspaces --if-present",

@@ -1,11 +1,15 @@
-import { Link, useLocation } from "react-router-dom";
-import type { ReactNode } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useState, useEffect, type ReactNode } from "react";
 import { PRODUCT_NAME, PRODUCT_TAGLINE } from "@trafficvaulthub/shared";
 import styles from "./Shell.module.css";
 
 const NAV = [
   { to: "/", label: "Home" },
   { to: "/offers", label: "Offers" },
+  { to: "/tracking-links", label: "Tracking links" },
+  { to: "/smartlinks", label: "Smartlinks" },
+  { to: "/disputes", label: "Disputes" },
+  { to: "/integrity", label: "Fraud Shield" },
   { to: "/categories", label: "Categories" },
   { to: "/earnings", label: "Earnings" },
   { to: "/conversion-confidence", label: "Confidence" },
@@ -19,6 +23,33 @@ const NAV = [
 
 export function Shell({ children }: { children: ReactNode }) {
   const location = useLocation();
+  const navigate = useNavigate();
+  const [token, setToken] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    const t = localStorage.getItem("tvh_token");
+    setToken(t);
+    const u = localStorage.getItem("tvh_user");
+    if (u) {
+      try {
+        const parsed = JSON.parse(u);
+        setUserEmail(parsed.email || parsed.role || "Partner");
+      } catch {
+        setUserEmail("Partner");
+      }
+    } else {
+      setUserEmail(null);
+    }
+  }, [location.pathname]);
+
+  function handleSignOut() {
+    localStorage.removeItem("tvh_token");
+    localStorage.removeItem("tvh_user");
+    setToken(null);
+    setUserEmail(null);
+    navigate("/login");
+  }
 
   return (
     <div className={styles.shell}>
@@ -32,7 +63,7 @@ export function Shell({ children }: { children: ReactNode }) {
           <span className={styles.tagline}>{PRODUCT_TAGLINE}</span>
         </div>
         <nav className={styles.nav} aria-label="Primary">
-          {NAV.map((item) => {
+          {NAV.filter((item) => !(token && item.to === "/login")).map((item) => {
             const active = location.pathname === item.to;
             return (
               <Link
@@ -45,6 +76,21 @@ export function Shell({ children }: { children: ReactNode }) {
               </Link>
             );
           })}
+          {token && (
+            <div className={styles.authWidget}>
+              <span className={styles.userBadge} title={userEmail ?? "Logged in"}>
+                {userEmail}
+              </span>
+              <button
+                type="button"
+                className={styles.signOutBtn}
+                onClick={handleSignOut}
+                aria-label="Sign out"
+              >
+                Sign out
+              </button>
+            </div>
+          )}
         </nav>
       </header>
       <main id="main-content" className={styles.main} tabIndex={-1}>{children}</main>

@@ -13,6 +13,10 @@ import { CompliancePage } from "./pages/CompliancePage";
 import { PayoutsPage } from "./pages/PayoutsPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { ConversionConfidencePage } from "./pages/ConversionConfidencePage";
+import { TrackingLinksPage } from "./pages/TrackingLinksPage";
+import { SmartlinksPage } from "./pages/SmartlinksPage";
+import { DisputesPage } from "./pages/DisputesPage";
+import { IntegrityPage } from "./pages/IntegrityPage";
 
 function AppRoutes() {
   const location = useLocation();
@@ -30,6 +34,10 @@ function AppRoutes() {
     <Shell>
       <Routes>
         <Route path="/offers" element={<OffersPage />} />
+        <Route path="/tracking-links" element={<TrackingLinksPage />} />
+        <Route path="/smartlinks" element={<SmartlinksPage />} />
+        <Route path="/disputes" element={<DisputesPage />} />
+        <Route path="/integrity" element={<IntegrityPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/earnings" element={<EarningsPage />} />
         <Route path="/conversion-confidence" element={<ConversionConfidencePage />} />

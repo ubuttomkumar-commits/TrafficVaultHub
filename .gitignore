@@ -46,3 +46,5 @@ wrangler.toml.bak
 # Misc
 *.tgz
 .cache/
+public/assets/aistudio/
+
