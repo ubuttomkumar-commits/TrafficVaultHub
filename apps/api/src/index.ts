@@ -1,9 +1,6 @@
 /**
  * TrafficVaultHub API
- * Cloudflare Workers + Hono entrypoint
- *
- * Server-side truth takes precedence over frontend state.
- * All privileged decisions are attributable and audited.
+ * Cloudflare Workers + Hono — existing D1 schema; no duplicate systems.
  */
 
 import { Hono } from "hono";
@@ -14,12 +11,13 @@ import { API_PREFIX, PRODUCT_NAME } from "@trafficvaulthub/shared";
 import type { Env } from "./env";
 import { healthRoutes } from "./routes/health";
 import { categoryRoutes } from "./routes/categories";
+import { offerRoutes } from "./routes/offers";
 import { errorHandler } from "./middleware/error-handler";
 import { correlationId } from "./middleware/correlation-id";
+import { optionalAuth } from "./middleware/auth";
 
 const app = new Hono<{ Bindings: Env }>();
 
-// Global middleware
 app.use("*", correlationId());
 app.use("*", logger());
 app.use("*", secureHeaders());
@@ -27,12 +25,10 @@ app.use(
   "*",
   cors({
     origin: (origin) => {
-      // In production, restrict to known frontend origins
       if (!origin) return "*";
       const allowed = [
         "http://localhost:5173",
         "http://127.0.0.1:5173",
-        // Add production domains here
       ];
       return allowed.includes(origin) ? origin : allowed[0];
     },
@@ -42,7 +38,6 @@ app.use(
 
 app.onError(errorHandler);
 
-// Root
 app.get("/", (c) => {
   return c.json({
     product: PRODUCT_NAME,
@@ -52,14 +47,14 @@ app.get("/", (c) => {
   });
 });
 
-// Mount versioned API
 const api = new Hono<{ Bindings: Env }>();
+api.use("*", optionalAuth());
 api.route("/health", healthRoutes);
 api.route("/offer-categories", categoryRoutes);
+api.route("/offers", offerRoutes);
 
 app.route(API_PREFIX, api);
 
-// 404
 app.notFound((c) => {
   return c.json(
     {

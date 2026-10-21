@@ -186,3 +186,28 @@ See `docs/PHASE_A_AUDIT.md`.
 - Did not overwrite worker `trafficvaulthub` (no auth in scaffold; existing script not in git)
 - Did not invent production conversions/earnings
 - Did not duplicate offers/conversions/ledger/sessions tables
+
+---
+
+## 9. Unit B2 + C1 + auth middleware (2026-10-21)
+
+### B2 — Shared types aligned to remote D1
+- `OFFER_STATUSES`, `OFFER_ACCESS_MODES`, `PAYOUT_TYPES`, `CONVERSION_STATUSES` match deployed CHECKs
+
+### C1 — Read-only offers API
+- `GET /api/v1/offers` — LIVE + PUBLIC (or APPLICATION_REQUIRED if session present)
+- `GET /api/v1/offers/:id` — same visibility rules; no fabricated metrics
+- Uses existing `offers` + `offer_versions` only
+
+### Auth middleware (foundation)
+- `optionalAuth` / `requireAuth` against existing `sessions` + `users`
+- Bearer token hashed SHA-256 → `sessions.token_hash`
+- No parallel auth tables; login endpoint not yet implemented (needs verified scrypt params)
+
+### Frontend
+- `/offers` marketplace page (empty until LIVE public offers exist)
+
+### Not done
+- Login / password verify
+- Deploy to Cloudflare Workers (deferred until login + secrets)
+- Staging/prod category seed

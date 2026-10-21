@@ -5,6 +5,7 @@ import styles from "./Shell.module.css";
 
 const NAV = [
   { to: "/", label: "Home" },
+  { to: "/offers", label: "Offers" },
   { to: "/categories", label: "Categories" },
   { to: "/health", label: "System Health" },
 ] as const;
