@@ -317,3 +317,12 @@ See `docs/PHASE_A_AUDIT.md`.
 - API: https://trafficvaulthub.uttombarmon45.workers.dev
 - VITE_API_BASE points pages build at workers API
 - CORS allows *.pages.dev
+
+---
+
+## 18. Tracking links + Login/Earnings UI (2026-10-21)
+
+- POST/GET /api/v1/tracking-links
+- UI: /login, /earnings on https://trafficvaulthub.pages.dev
+- docs/PRD_STATUS.md — honest complete vs residual matrix
+- API worker version e6195cbb
