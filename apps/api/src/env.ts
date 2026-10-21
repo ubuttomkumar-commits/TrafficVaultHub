@@ -19,6 +19,8 @@ export type Env = {
   // Vars
   ENVIRONMENT: string;
   API_VERSION: string;
+  /** Optional HMAC secret for S2S postbacks (dev/staging) */
+  POSTBACK_HMAC_SECRET?: string;
 
   // Secrets (injected at runtime)
   SESSION_SECRET?: string;

@@ -252,3 +252,16 @@ See `docs/PHASE_A_AUDIT.md`.
 - Advertiser campaign APIs not yet
 - No production ENVIRONMENT deploy
 - Bootstrap admin password must be rotated by operator
+
+---
+
+## 12. S2S postback unit (2026-10-21)
+
+- `GET|POST /api/v1/postbacks/s2s`
+- Params: click_id, external_conversion_id, optional event, transaction_id, sale_amount_minor, occurred_at, sig, ts
+- Commission always from offer_versions.affiliate_commission_minor
+- Idempotent via organization_id + idempotency_key
+- Rejects: attribution_window_expired, offer_not_live, invalid_event (recorded as REJECTED with reason_code)
+- Optional HMAC when POSTBACK_HMAC_SECRET set
+- Queue message conversion.received when CONVERSION_QUEUE bound
+- Deployed version aa7245e2 on workers.dev

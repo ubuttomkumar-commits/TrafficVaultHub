@@ -15,6 +15,7 @@ import { offerRoutes } from "./routes/offers";
 import { authRoutes } from "./routes/auth";
 import { publisherRoutes } from "./routes/publisher";
 import { trackingRoutes } from "./routes/tracking";
+import { postbackRoutes } from "./routes/postbacks";
 import { errorHandler } from "./middleware/error-handler";
 import { correlationId } from "./middleware/correlation-id";
 import { optionalAuth } from "./middleware/auth";
@@ -58,6 +59,7 @@ api.route("/offer-categories", categoryRoutes);
 api.route("/offers", offerRoutes);
 api.route("/publisher", publisherRoutes);
 api.route("/t", trackingRoutes);
+api.route("/postbacks", postbackRoutes);
 
 app.route(API_PREFIX, api);
 
