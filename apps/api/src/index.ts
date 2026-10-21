@@ -12,6 +12,7 @@ import type { Env } from "./env";
 import { healthRoutes } from "./routes/health";
 import { categoryRoutes } from "./routes/categories";
 import { offerRoutes } from "./routes/offers";
+import { authRoutes } from "./routes/auth";
 import { errorHandler } from "./middleware/error-handler";
 import { correlationId } from "./middleware/correlation-id";
 import { optionalAuth } from "./middleware/auth";
@@ -50,6 +51,7 @@ app.get("/", (c) => {
 const api = new Hono<{ Bindings: Env }>();
 api.use("*", optionalAuth());
 api.route("/health", healthRoutes);
+api.route("/auth", authRoutes);
 api.route("/offer-categories", categoryRoutes);
 api.route("/offers", offerRoutes);
 

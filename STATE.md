@@ -211,3 +211,24 @@ See `docs/PHASE_A_AUDIT.md`.
 - Login / password verify
 - Deploy to Cloudflare Workers (deferred until login + secrets)
 - Staging/prod category seed
+
+---
+
+## 10. Auth unit — login / logout / me / bootstrap (2026-10-21)
+
+### Endpoints
+- `POST /api/v1/auth/login` — email+password → session token (7d)
+- `POST /api/v1/auth/logout` — revoke session
+- `GET /api/v1/auth/me` — current user + org memberships
+- `POST /api/v1/auth/bootstrap` — first user only; **blocked when ENVIRONMENT=production**
+
+### Implementation notes
+- Reuses `users`, `user_credentials`, `sessions`, `organizations`, `organization_members`, `auth_events`
+- Password format: `pbkdf2$sha256$i=100000$salt$hash` (algorithm `pbkdf2-sha256`)
+- Session: raw token returned once; stored as SHA-256 hex in `sessions.token_hash`
+- Lockout after 8 failed attempts (15 minutes)
+- No parallel auth tables
+
+### Not done
+- Public registration, MFA, password reset flows
+- Worker deploy to Cloudflare
