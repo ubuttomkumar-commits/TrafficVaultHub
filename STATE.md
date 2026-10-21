@@ -165,3 +165,24 @@ a gap matrix reconciles schemas.
 
 ### Security
 - API tokens must never be committed. Rotate any token that was shared in chat.
+
+---
+
+## 8. Phase A audit complete (2026-10-21)
+
+See `docs/PHASE_A_AUDIT.md`.
+
+**System of record for schema:** Cloudflare D1 (migrations 0001–0009 + additive 0003 categories on **dev**).
+
+**System of record for application code:** this git repository (scaffold).
+
+### B1 completed on trafficvaulthub-dev
+- `offer_categories` + `category_policy_versions` created (additive)
+- 56 category rows seeded (PRD §3.1)
+- **Not** applied to staging/production yet
+- Scaffold migrations `0001`/`0002` must **never** be applied to remote D1
+
+### Explicit non-actions
+- Did not overwrite worker `trafficvaulthub` (no auth in scaffold; existing script not in git)
+- Did not invent production conversions/earnings
+- Did not duplicate offers/conversions/ledger/sessions tables
