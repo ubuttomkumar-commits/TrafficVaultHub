@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { apiUrl } from "../lib/api";
 import styles from "./HealthPage.module.css";
 
 type HealthResponse = {
@@ -24,7 +25,7 @@ export function HealthPage() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch("/api/v1/health");
+        const res = await fetch(apiUrl("/api/v1/health"));
         const body = (await res.json()) as HealthResponse;
         if (!cancelled) {
           setData(body);

@@ -33,11 +33,16 @@ app.use(
   cors({
     origin: (origin) => {
       if (!origin) return "*";
-      const allowed = [
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-      ];
-      return allowed.includes(origin) ? origin : allowed[0];
+      // Allow local Vite + Cloudflare Pages
+      if (
+        origin.startsWith("http://localhost:") ||
+        origin.startsWith("http://127.0.0.1:") ||
+        origin.endsWith(".pages.dev") ||
+        origin.endsWith(".workers.dev")
+      ) {
+        return origin;
+      }
+      return "http://localhost:5173";
     },
     credentials: true,
   })
@@ -51,6 +56,7 @@ app.get("/", (c) => {
     message: "TrafficVaultHub API",
     version: c.env.API_VERSION ?? "v1",
     docs: `${API_PREFIX}/health`,
+    ui: "https://trafficvaulthub.pages.dev",
   });
 });
 

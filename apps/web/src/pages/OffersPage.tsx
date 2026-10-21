@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { apiUrl } from "../lib/api";
 import styles from "./OffersPage.module.css";
 
 type Offer = {
@@ -40,7 +41,7 @@ export function OffersPage() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch("/api/v1/offers?limit=20");
+        const res = await fetch(apiUrl("/api/v1/offers?limit=20"));
         const body = (await res.json()) as ListResponse;
         if (!cancelled) {
           if (!res.ok) {

@@ -308,3 +308,12 @@ See `docs/PHASE_A_AUDIT.md`.
 - Transitions: submit-review, approve (platform), activate, pause, resume, reject→DRAFT
 - Records offer_status_transitions; LIVE requires destination_url + conversion_event
 - Deployed version 093f0952
+
+---
+
+## 17. Frontend on Cloudflare Pages (2026-10-21)
+
+- UI: https://trafficvaulthub.pages.dev
+- API: https://trafficvaulthub.uttombarmon45.workers.dev
+- VITE_API_BASE points pages build at workers API
+- CORS allows *.pages.dev

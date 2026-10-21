@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { apiUrl } from "../lib/api";
 import styles from "./CategoriesPage.module.css";
 
 type Category = {
@@ -25,7 +26,7 @@ export function CategoriesPage() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch("/api/v1/offer-categories");
+        const res = await fetch(apiUrl("/api/v1/offer-categories"));
         const body = (await res.json()) as {
           data?: Category[];
           message?: string;
