@@ -12,6 +12,7 @@ import { PrivacyPage, TermsPage } from "./pages/LegalPage";
 import { CompliancePage } from "./pages/CompliancePage";
 import { PayoutsPage } from "./pages/PayoutsPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
+import { ConversionConfidencePage } from "./pages/ConversionConfidencePage";
 
 function AppRoutes() {
   const location = useLocation();
@@ -31,6 +32,7 @@ function AppRoutes() {
         <Route path="/offers" element={<OffersPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/earnings" element={<EarningsPage />} />
+        <Route path="/conversion-confidence" element={<ConversionConfidencePage />} />
         <Route path="/offer-caps" element={<OfferCapsPage />} />
         <Route path="/campaign-studio" element={<CampaignStudioPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />

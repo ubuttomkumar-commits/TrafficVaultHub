@@ -457,6 +457,78 @@ async function transitionOffer(
         422
       );
     }
+
+    // Restricted / prohibited categories require a closed approved compliance case
+    try {
+      const risk = await c.env.DB.prepare(
+        `SELECT oc.risk_classification, oc.name AS category_name
+         FROM offer_category_map ocm
+         INNER JOIN offer_categories oc ON oc.id = ocm.category_id
+         WHERE ocm.offer_id = ?
+         ORDER BY CASE oc.risk_classification
+           WHEN 'prohibited' THEN 0 WHEN 'restricted' THEN 1 WHEN 'elevated' THEN 2 ELSE 3 END
+         LIMIT 1`
+      )
+        .bind(offerId)
+        .first<{ risk_classification: string; category_name: string }>();
+      if (risk?.risk_classification === "prohibited") {
+        return c.json(
+          {
+            error: {
+              code: "category_prohibited",
+              message: `Category "${risk.category_name}" is prohibited and cannot go LIVE`,
+              correlationId,
+            },
+          },
+          422
+        );
+      }
+      if (risk?.risk_classification === "restricted") {
+        const approved = await c.env.DB.prepare(
+          `SELECT id FROM compliance_cases
+           WHERE offer_id = ? AND status = 'APPROVED'
+           ORDER BY decided_at DESC LIMIT 1`
+        )
+          .bind(offerId)
+          .first<{ id: string }>();
+        if (!approved) {
+          // Ensure an open case exists for the queue
+          const open = await c.env.DB.prepare(
+            `SELECT id FROM compliance_cases WHERE offer_id = ? AND status = 'OPEN' LIMIT 1`
+          )
+            .bind(offerId)
+            .first<{ id: string }>();
+          if (!open) {
+            await c.env.DB.prepare(
+              `INSERT INTO compliance_cases (
+                 id, organization_id, offer_id, case_type, status, priority, summary, opened_by_user_id
+               ) VALUES (?, ?, ?, 'RESTRICTED_CATEGORY_REVIEW', 'OPEN', 'high', ?, ?)`
+            )
+              .bind(
+                crypto.randomUUID(),
+                offer.organization_id,
+                offerId,
+                `Restricted category "${risk.category_name}" requires compliance approval before LIVE`,
+                user.id
+              )
+              .run();
+          }
+          return c.json(
+            {
+              error: {
+                code: "compliance_required",
+                message:
+                  "Restricted-category offer requires an APPROVED compliance case before activation",
+                correlationId,
+              },
+            },
+            422
+          );
+        }
+      }
+    } catch {
+      // Schema may lack offer_category_map on older DBs — fail open only for that path
+    }
   }
 
   const extra =

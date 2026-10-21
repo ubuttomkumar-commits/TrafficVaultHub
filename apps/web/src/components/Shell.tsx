@@ -8,6 +8,7 @@ const NAV = [
   { to: "/offers", label: "Offers" },
   { to: "/categories", label: "Categories" },
   { to: "/earnings", label: "Earnings" },
+  { to: "/conversion-confidence", label: "Confidence" },
   { to: "/offer-caps", label: "Click caps" },
   { to: "/campaign-studio", label: "Campaign studio" },
   { to: "/compliance", label: "Compliance" },

@@ -380,3 +380,15 @@ See `docs/PHASE_A_AUDIT.md`.
 ## Master completion pass (2026-10-21)
 
 Additive compliance/smartlinks/payouts/evidence/hero/campaign-studio/tests. Not production-ready.
+
+---
+
+## 24. Master completion additives (2026-10-21)
+
+- Restricted-category activation gate + auto compliance case
+- Compliance case decide endpoint + UI actions
+- Publisher conversion-confidence API + page
+- GitHub Actions CI
+- Additional unit tests
+- docs/IMPLEMENTATION_AUDIT.md refreshed
+- Production readiness still NOT declared

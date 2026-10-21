@@ -248,3 +248,100 @@ publisherRoutes.get("/conversions", async (c) => {
     correlationId,
   });
 });
+
+/**
+ * GET /api/v1/publisher/conversion-confidence
+ * PRD §6.3 — real counts only; no fabricated rates.
+ */
+publisherRoutes.get("/conversion-confidence", async (c) => {
+  const correlationId = c.get("correlationId");
+  const user = c.get("user")!;
+  const orgs = await affiliateOrgs(c.env.DB, user.id);
+
+  if (orgs.length === 0) {
+    return c.json(
+      {
+        error: {
+          code: "no_affiliate_org",
+          message: "No active affiliate organization membership",
+          correlationId,
+        },
+      },
+      403
+    );
+  }
+
+  const requested = c.req.query("organizationId");
+  const org =
+    (requested && orgs.find((o) => o.organization_id === requested)) || orgs[0];
+  if (requested && org.organization_id !== requested) {
+    return c.json(
+      {
+        error: {
+          code: "forbidden",
+          message: "Not a member of that organization",
+          correlationId,
+        },
+      },
+      403
+    );
+  }
+
+  const orgId = org.organization_id;
+  const windowHours = Math.min(
+    168,
+    Math.max(1, Number(c.req.query("windowHours") || 24) || 24)
+  );
+
+  const lifecycleCounts = await c.env.DB.prepare(
+    `SELECT COALESCE(lifecycle_status, status) AS st, COUNT(*) AS cnt
+     FROM conversions
+     WHERE affiliate_organization_id = ?
+     GROUP BY COALESCE(lifecycle_status, status)`
+  )
+    .bind(orgId)
+    .all<{ st: string; cnt: number }>();
+
+  const recent = await c.env.DB.prepare(
+    `SELECT COUNT(*) AS cnt FROM conversions
+     WHERE affiliate_organization_id = ?
+       AND created_at >= strftime('%Y-%m-%dT%H:%M:%fZ', 'now', ?)`
+  )
+    .bind(orgId, `-${windowHours} hours`)
+    .first<{ cnt: number }>();
+
+  const lastEvent = await c.env.DB.prepare(
+    `SELECT created_at FROM conversions
+     WHERE affiliate_organization_id = ?
+     ORDER BY created_at DESC LIMIT 1`
+  )
+    .bind(orgId)
+    .first<{ created_at: string }>();
+
+  const lastClick = await c.env.DB.prepare(
+    `SELECT clicked_at FROM clicks
+     WHERE affiliate_organization_id = ?
+     ORDER BY clicked_at DESC LIMIT 1`
+  )
+    .bind(orgId)
+    .first<{ clicked_at: string }>();
+
+  const byStatus: Record<string, number> = {};
+  for (const row of lifecycleCounts.results ?? []) {
+    byStatus[row.st] = row.cnt;
+  }
+
+  return c.json({
+    data: {
+      organizationId: orgId,
+      organizationName: org.org_name,
+      windowHours,
+      conversionCountsByStatus: byStatus,
+      conversionsInWindow: recent?.cnt ?? 0,
+      lastConversionAt: lastEvent?.created_at ?? null,
+      lastClickAt: lastClick?.clicked_at ?? null,
+      note: "Counts are server-derived from conversions and clicks only. No estimated EPC or conversion rates.",
+    },
+    correlationId,
+  });
+});
