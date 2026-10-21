@@ -1,0 +1,71 @@
+.trustCard {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.75rem;
+  margin-top: 1.5rem;
+}
+
+.radarGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+}
+
+@media (max-width: 860px) {
+  .radarGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dimensionBox {
+  background: rgba(10, 14, 24, 0.75);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 1.25rem;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.dimensionBox:hover,
+.dimensionBoxActive {
+  border-color: var(--color-accent-cyan);
+  background: rgba(15, 23, 42, 0.9);
+  box-shadow: 0 4px 20px rgba(34, 211, 238, 0.1);
+}
+
+.dimHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.dimTitle {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.dimScore {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-accent-cyan);
+}
+
+.dimDesc {
+  font-size: 0.82rem;
+  color: var(--color-text-secondary);
+  line-height: 1.45;
+  margin-bottom: 0.75rem;
+}
+
+.dimMeta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  border-top: 1px solid rgba(148, 163, 184, 0.1);
+  padding-top: 0.5rem;
+}

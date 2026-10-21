@@ -1,0 +1,142 @@
+.explorerWrap {
+  margin-top: 1.5rem;
+}
+
+.filterBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.categoryTabs {
+  display: flex;
+  gap: 0.35rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+}
+
+.tabBtn {
+  background: rgba(148, 163, 184, 0.08);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  padding: 0.45rem 0.85rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.tabBtn:hover {
+  background: rgba(148, 163, 184, 0.15);
+  color: var(--color-text-primary);
+}
+
+.tabBtnActive {
+  background: rgba(34, 211, 238, 0.12);
+  border-color: var(--color-accent-cyan);
+  color: var(--color-accent-cyan);
+  font-weight: 600;
+}
+
+.offerGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+}
+
+@media (max-width: 960px) {
+  .offerGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .offerGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.offerCard {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.offerCard:hover {
+  transform: translateY(-2px);
+  border-color: rgba(34, 211, 238, 0.4);
+}
+
+.cardTop {
+  margin-bottom: 1rem;
+}
+
+.cardVertical {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.35rem;
+}
+
+.cardTitle {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0 0 0.5rem;
+}
+
+.cardDesc {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  line-height: 1.45;
+  margin: 0;
+}
+
+.cardBottom {
+  border-top: 1px solid var(--color-border);
+  padding-top: 0.85rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.payoutAmount {
+  font-family: var(--font-mono);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--color-accent-cyan);
+}
+
+.payoutModel {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  margin-left: 0.25rem;
+}
+
+.cardAction {
+  padding: 0.4rem 0.75rem;
+  border-radius: var(--radius-sm);
+  background: rgba(34, 211, 238, 0.1);
+  border: 1px solid var(--color-accent-cyan);
+  color: var(--color-accent-cyan);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.cardAction:hover {
+  background: var(--color-accent-cyan);
+  color: #0a0c12;
+  text-decoration: none;
+}

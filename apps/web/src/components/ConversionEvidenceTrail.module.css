@@ -1,0 +1,107 @@
+.trailCard {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+  margin-top: 1.5rem;
+}
+
+.stageNav {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--color-border);
+  scrollbar-width: thin;
+}
+
+.stageBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.85rem;
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.stageBtn:hover {
+  background: rgba(148, 163, 184, 0.08);
+  color: var(--color-text-primary);
+  border-color: rgba(148, 163, 184, 0.3);
+}
+
+.stageBtnActive {
+  background: rgba(34, 211, 238, 0.1);
+  border-color: var(--color-accent-cyan);
+  color: var(--color-accent-cyan);
+  box-shadow: 0 0 12px rgba(34, 211, 238, 0.15);
+}
+
+.stageNumber {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.75rem;
+  color: inherit;
+}
+
+.detailBox {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-top: 1.75rem;
+  align-items: center;
+}
+
+@media (max-width: 768px) {
+  .detailBox {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+}
+
+.detailCopy h3 {
+  font-size: 1.35rem;
+  margin: 0 0 0.5rem;
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.detailCopy p {
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  font-size: 0.95rem;
+  margin-bottom: 1rem;
+}
+
+.codeBlock {
+  background: rgba(10, 12, 18, 0.85);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  border-radius: var(--radius-sm);
+  padding: 1.25rem;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: #38bdf8;
+  overflow-x: auto;
+  line-height: 1.5;
+}
+
+.badgeSecure {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  color: var(--color-success);
+  background: rgba(52, 211, 153, 0.12);
+  border: 1px solid rgba(52, 211, 153, 0.3);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+}

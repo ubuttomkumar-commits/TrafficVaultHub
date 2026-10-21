@@ -781,10 +781,37 @@
   max-width: 48rem;
 }
 
-.copy {
+.faqGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  margin-top: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .faqGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.faqCard {
+  background: var(--lp-glass);
+  border: 1px solid var(--lp-border);
+  border-radius: 0.75rem;
+  padding: 1.25rem 1.5rem;
+}
+
+.faqCard h3 {
+  font-size: 1.05rem;
+  color: var(--lp-text);
+  margin: 0 0 0.5rem;
+}
+
+.faqCard p {
+  font-size: 0.88rem;
+  color: var(--lp-muted);
+  line-height: 1.55;
   margin: 0;
-  font-size: 0.75rem;
-  color: #64748b;
 }
 
 @media (prefers-reduced-motion: reduce) {
