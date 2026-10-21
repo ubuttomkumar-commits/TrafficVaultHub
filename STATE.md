@@ -277,3 +277,14 @@ See `docs/PHASE_A_AUDIT.md`.
 - Lifecycle → LEDGER_POSTED + status history
 - `POST /api/v1/conversions/:id/reject` — no ledger credit
 - Deployed version a48d9006
+
+---
+
+## 14. Conversion reversal (2026-10-21)
+
+- `POST /api/v1/conversions/:id/reverse`
+- Posts CONVERSION_REVERSAL with reverses_journal_id → original CONVERSION_COMMISSION
+- Writes conversion_reversals (schema-aligned reason codes)
+- Lifecycle → REVERSED; idempotent ledger:reversal:{id}
+- Allowed reasons: REFUND, CHARGEBACK, FRAUD_CONFIRMED, ADVERTISER_DISPUTE, DUPLICATE_DETECTED_LATE, COMPLIANCE_VIOLATION, MANUAL_CORRECTION
+- Deployed version 4cea4396

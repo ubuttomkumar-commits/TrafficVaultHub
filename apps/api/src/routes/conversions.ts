@@ -421,3 +421,352 @@ conversionRoutes.post("/:id/reject", async (c) => {
     correlationId,
   });
 });
+
+/**
+ * POST /api/v1/conversions/:id/reverse
+ * Platform ops — reverse a LEDGER_POSTED (or later earned) conversion.
+ * Posts CONVERSION_REVERSAL journal linked via reverses_journal_id.
+ */
+conversionRoutes.post("/:id/reverse", async (c) => {
+  const correlationId = c.get("correlationId");
+  const user = c.get("user")!;
+  const conversionId = c.req.param("id");
+
+  if (!(await isPlatformOperator(c.env.DB, user.id))) {
+    return c.json(
+      {
+        error: {
+          code: "forbidden",
+          message: "Platform operator role required",
+          correlationId,
+        },
+      },
+      403
+    );
+  }
+
+  const ALLOWED = new Set(["REFUND","CHARGEBACK","FRAUD_CONFIRMED","ADVERTISER_DISPUTE","DUPLICATE_DETECTED_LATE","COMPLIANCE_VIOLATION","MANUAL_CORRECTION"]);
+  let reason = "MANUAL_CORRECTION";
+  let note: string | null = null;
+  try {
+    const body = await c.req.json<{ reasonCode?: string; note?: string }>();
+    if (body.reasonCode && ALLOWED.has(body.reasonCode)) reason = body.reasonCode;
+    else if (body.reasonCode) reason = "MANUAL_CORRECTION";
+    if (body.note) note = body.note.slice(0, 1000);
+  } catch {
+    /* optional */
+  }
+
+  const conv = await c.env.DB.prepare(
+    `SELECT id, organization_id, affiliate_organization_id, lifecycle_status,
+            commission_amount_minor, commission_currency, external_conversion_id
+     FROM conversions WHERE id = ? LIMIT 1`
+  )
+    .bind(conversionId)
+    .first<{
+      id: string;
+      organization_id: string;
+      affiliate_organization_id: string | null;
+      lifecycle_status: string;
+      commission_amount_minor: number | null;
+      commission_currency: string | null;
+      external_conversion_id: string;
+    }>();
+
+  if (!conv) {
+    return c.json(
+      {
+        error: {
+          code: "not_found",
+          message: "Conversion not found",
+          correlationId,
+        },
+      },
+      404
+    );
+  }
+
+  if (conv.lifecycle_status === "REVERSED") {
+    const prior = await c.env.DB.prepare(
+      `SELECT id FROM journal_entries
+       WHERE reference_type = 'CONVERSION_REVERSAL' AND reference_id = ?
+         AND journal_type = 'CONVERSION_REVERSAL'
+       LIMIT 1`
+    )
+      .bind(conversionId)
+      .first<{ id: string }>();
+    return c.json({
+      data: {
+        conversionId,
+        lifecycleStatus: "REVERSED",
+        journalId: prior?.id ?? null,
+        alreadyReversed: true,
+      },
+      correlationId,
+    });
+  }
+
+  const reversible = new Set([
+    "LEDGER_POSTED",
+    "EARNED",
+    "PAYOUT_ELIGIBLE",
+  ]);
+  if (!reversible.has(conv.lifecycle_status)) {
+    return c.json(
+      {
+        error: {
+          code: "invalid_state",
+          message: `Cannot reverse conversion in lifecycle ${conv.lifecycle_status}`,
+          correlationId,
+        },
+      },
+      409
+    );
+  }
+
+  if (!conv.affiliate_organization_id) {
+    return c.json(
+      {
+        error: {
+          code: "missing_affiliate",
+          message: "Conversion has no affiliate organization",
+          correlationId,
+        },
+      },
+      422
+    );
+  }
+
+  const original = await c.env.DB.prepare(
+    `SELECT id, currency, total_minor FROM journal_entries
+     WHERE reference_type = 'CONVERSION' AND reference_id = ?
+       AND journal_type = 'CONVERSION_COMMISSION'
+     LIMIT 1`
+  )
+    .bind(conversionId)
+    .first<{ id: string; currency: string; total_minor: number }>();
+
+  if (!original) {
+    return c.json(
+      {
+        error: {
+          code: "missing_commission_journal",
+          message: "No CONVERSION_COMMISSION journal found to reverse",
+          correlationId,
+        },
+      },
+      422
+    );
+  }
+
+  const amount = original.total_minor;
+  const currency = original.currency;
+  const idempotencyKey = `ledger:reversal:${conversionId}`;
+
+  const existingReversal = await c.env.DB.prepare(
+    `SELECT id FROM journal_entries WHERE idempotency_key = ? LIMIT 1`
+  )
+    .bind(idempotencyKey)
+    .first<{ id: string }>();
+
+  if (existingReversal) {
+    await c.env.DB.prepare(
+      `UPDATE conversions
+       SET lifecycle_status = 'REVERSED',
+           updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')
+       WHERE id = ?`
+    )
+      .bind(conversionId)
+      .run();
+    return c.json({
+      data: {
+        conversionId,
+        lifecycleStatus: "REVERSED",
+        journalId: existingReversal.id,
+        alreadyReversed: true,
+      },
+      correlationId,
+    });
+  }
+
+  const journalId = crypto.randomUUID();
+  const historyId = crypto.randomUUID();
+  const revHistoryId = crypto.randomUUID();
+  const postedAt = new Date().toISOString();
+  const fromStatus = conv.lifecycle_status;
+
+  try {
+    await c.env.DB.batch([
+      c.env.DB.prepare(
+        `INSERT INTO journal_entries (
+           id, organization_id, journal_type, currency, total_minor,
+           reference_type, reference_id, reverses_journal_id,
+           idempotency_key, actor_type, posted_by_user_id,
+           description, request_id, posted_at
+         ) VALUES (
+           ?, ?, 'CONVERSION_REVERSAL', ?, ?,
+           'CONVERSION_REVERSAL', ?, ?,
+           ?, 'PLATFORM', ?,
+           ?, ?, ?
+         )`
+      ).bind(
+        journalId,
+        conv.affiliate_organization_id,
+        currency,
+        amount,
+        conversionId,
+        original.id,
+        idempotencyKey,
+        user.id,
+        `Reversal of commission for ${conv.external_conversion_id}: ${reason}`,
+        correlationId,
+        postedAt
+      ),
+      c.env.DB.prepare(
+        `UPDATE conversions
+         SET lifecycle_status = 'REVERSED',
+             updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')
+         WHERE id = ?`
+      ).bind(conversionId),
+      c.env.DB.prepare(
+        `INSERT INTO conversion_status_history (
+           id, organization_id, conversion_id, from_status, to_status,
+           actor_type, actor_user_id, reason_code, note, request_id
+         ) VALUES (?, ?, ?, ?, 'REVERSED', 'PLATFORM', ?, ?, ?, ?)`
+      ).bind(
+        historyId,
+        conv.organization_id,
+        conversionId,
+        fromStatus,
+        user.id,
+        reason,
+        note ?? `Reversed journal ${original.id} → ${journalId}`,
+        correlationId
+      ),
+      c.env.DB.prepare(
+        `INSERT INTO conversion_reversals (
+           id, organization_id, conversion_id, reason_code,
+           amount_minor, currency, reversed_by_user_id, actor_type, note, request_id
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, 'PLATFORM', ?, ?)`
+      ).bind(
+        revHistoryId,
+        conv.organization_id,
+        conversionId,
+        reason,
+        amount,
+        currency,
+        user.id,
+        note,
+        correlationId
+      ),
+    ]);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    // conversion_reversals table may have different columns — retry without it
+    if (msg.includes("conversion_reversals") || msg.includes("no such table") || msg.includes("has no column")) {
+      try {
+        await c.env.DB.batch([
+          c.env.DB.prepare(
+            `INSERT INTO journal_entries (
+               id, organization_id, journal_type, currency, total_minor,
+               reference_type, reference_id, reverses_journal_id,
+               idempotency_key, actor_type, posted_by_user_id,
+               description, request_id, posted_at
+             ) VALUES (
+               ?, ?, 'CONVERSION_REVERSAL', ?, ?,
+               'CONVERSION_REVERSAL', ?, ?,
+               ?, 'PLATFORM', ?,
+               ?, ?, ?
+             )`
+          ).bind(
+            journalId,
+            conv.affiliate_organization_id,
+            currency,
+            amount,
+            conversionId,
+            original.id,
+            idempotencyKey,
+            user.id,
+            `Reversal of commission for ${conv.external_conversion_id}: ${reason}`,
+            correlationId,
+            postedAt
+          ),
+          c.env.DB.prepare(
+            `UPDATE conversions
+             SET lifecycle_status = 'REVERSED',
+                 updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')
+             WHERE id = ?`
+          ).bind(conversionId),
+          c.env.DB.prepare(
+            `INSERT INTO conversion_status_history (
+               id, organization_id, conversion_id, from_status, to_status,
+               actor_type, actor_user_id, reason_code, note, request_id
+             ) VALUES (?, ?, ?, ?, 'REVERSED', 'PLATFORM', ?, ?, ?, ?)`
+          ).bind(
+            historyId,
+            conv.organization_id,
+            conversionId,
+            fromStatus,
+            user.id,
+            reason,
+            note ?? `Reversed journal ${original.id} → ${journalId}`,
+            correlationId
+          ),
+        ]);
+      } catch (err2) {
+        console.error(`[${correlationId}] reverse failed`, err2);
+        return c.json(
+          {
+            error: {
+              code: "reversal_failed",
+              message: "Unable to post reversal journal",
+              correlationId,
+            },
+          },
+          503
+        );
+      }
+    } else if (msg.includes("UNIQUE") || msg.includes("unique")) {
+      const j = await c.env.DB.prepare(
+        `SELECT id FROM journal_entries WHERE idempotency_key = ? LIMIT 1`
+      )
+        .bind(idempotencyKey)
+        .first<{ id: string }>();
+      return c.json({
+        data: {
+          conversionId,
+          lifecycleStatus: "REVERSED",
+          journalId: j?.id ?? null,
+          alreadyReversed: true,
+        },
+        correlationId,
+      });
+    } else {
+      console.error(`[${correlationId}] reverse failed`, err);
+      return c.json(
+        {
+          error: {
+            code: "reversal_failed",
+            message: "Unable to post reversal journal",
+            correlationId,
+          },
+        },
+        503
+      );
+    }
+  }
+
+  return c.json({
+    data: {
+      conversionId,
+      lifecycleStatus: "REVERSED",
+      journalId,
+      reversesJournalId: original.id,
+      amountMinor: amount,
+      currency,
+      alreadyReversed: false,
+      reasonCode: reason,
+    },
+    correlationId,
+  });
+});
