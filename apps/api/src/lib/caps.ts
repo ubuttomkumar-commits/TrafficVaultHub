@@ -58,6 +58,8 @@ async function reserveViaDO(
     dailyConversion: ver.daily_conversion_cap,
     totalConversion: ver.total_conversion_cap,
     budgetMinor: ver.budget_minor,
+    dailyClick: null as number | null,
+    totalClick: null as number | null,
     currency: ver.currency || args.currency,
   };
 
@@ -235,7 +237,7 @@ export async function pauseOfferIfCapsExhausted(
     .prepare(
       `SELECT 1 AS ok FROM offer_cap_counters
        WHERE offer_id = ? AND exhausted_at IS NOT NULL
-         AND cap_type IN ('DAILY_CONVERSION', 'TOTAL_CONVERSION', 'BUDGET')
+         AND cap_type IN ('DAILY_CONVERSION', 'TOTAL_CONVERSION', 'BUDGET', 'DAILY_CLICK', 'TOTAL_CLICK')
        LIMIT 1`
     )
     .bind(offerId)
@@ -268,4 +270,169 @@ export async function pauseOfferIfCapsExhausted(
     )
     .bind(crypto.randomUUID(), offerId, organizationId, requestId)
     .run();
+}
+
+
+/** Load click limits from existing offer_cap_counters rows (limit_value). */
+async function loadClickLimits(
+  db: D1Database,
+  offerId: string
+): Promise<{ dailyClick: number | null; totalClick: number | null }> {
+  const day = utcDayKey();
+  const rows = await db
+    .prepare(
+      `SELECT cap_type, period_key, limit_value FROM offer_cap_counters
+       WHERE offer_id = ? AND cap_type IN ('DAILY_CLICK','TOTAL_CLICK')`
+    )
+    .bind(offerId)
+    .all<{ cap_type: string; period_key: string; limit_value: number | null }>();
+
+  let dailyClick: number | null = null;
+  let totalClick: number | null = null;
+  for (const r of rows.results ?? []) {
+    if (r.cap_type === "DAILY_CLICK" && r.limit_value != null) {
+      // Prefer today's row limit, else any DAILY_CLICK limit template
+      if (r.period_key === day || dailyClick == null) dailyClick = r.limit_value;
+    }
+    if (r.cap_type === "TOTAL_CLICK" && r.limit_value != null) {
+      totalClick = r.limit_value;
+    }
+  }
+  return { dailyClick, totalClick };
+}
+
+async function reserveClickViaDO(
+  env: EnvWithCaps,
+  args: { offerId: string; organizationId: string },
+  clickLimits: { dailyClick: number | null; totalClick: number | null }
+): Promise<CapCheckResult> {
+  if (!env.CAPS) return { ok: true };
+  const id = env.CAPS.idFromName(args.offerId);
+  const stub = env.CAPS.get(id);
+  const res = await stub.fetch("https://cap/reserve-click", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      offerId: args.offerId,
+      organizationId: args.organizationId,
+      limits: {
+        dailyConversion: null,
+        totalConversion: null,
+        budgetMinor: null,
+        dailyClick: clickLimits.dailyClick,
+        totalClick: clickLimits.totalClick,
+        currency: "USD",
+      },
+    }),
+  });
+  const body = (await res.json()) as {
+    ok: boolean;
+    reason?: string;
+    capType?: string;
+  };
+  if (!body.ok) {
+    return {
+      ok: false,
+      reason: body.reason ?? "cap_reached",
+      capType: body.capType,
+    };
+  }
+  return { ok: true };
+}
+
+async function reserveClickViaD1(
+  db: D1Database,
+  args: { offerId: string; organizationId: string },
+  clickLimits: { dailyClick: number | null; totalClick: number | null }
+): Promise<CapCheckResult> {
+  const day = utcDayKey();
+  const checks = [
+    {
+      capType: "DAILY_CLICK",
+      periodKey: day,
+      limit: clickLimits.dailyClick,
+    },
+    {
+      capType: "TOTAL_CLICK",
+      periodKey: "lifetime",
+      limit: clickLimits.totalClick,
+    },
+  ];
+
+  for (const c of checks) {
+    if (c.limit == null) continue;
+    await db
+      .prepare(
+        `INSERT INTO offer_cap_counters (
+           id, offer_id, organization_id, cap_type, period_key,
+           limit_value, current_value
+         ) VALUES (?, ?, ?, ?, ?, ?, 0)
+         ON CONFLICT(offer_id, cap_type, period_key) DO UPDATE SET
+           limit_value = excluded.limit_value,
+           updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')`
+      )
+      .bind(
+        crypto.randomUUID(),
+        args.offerId,
+        args.organizationId,
+        c.capType,
+        c.periodKey,
+        c.limit
+      )
+      .run();
+
+    const result = await db
+      .prepare(
+        `UPDATE offer_cap_counters
+         SET current_value = current_value + 1,
+             updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now'),
+             exhausted_at = CASE
+               WHEN current_value + 1 >= limit_value THEN strftime('%Y-%m-%dT%H:%M:%fZ','now')
+               ELSE exhausted_at
+             END
+         WHERE offer_id = ? AND cap_type = ? AND period_key = ?
+           AND limit_value IS NOT NULL
+           AND current_value + 1 <= limit_value`
+      )
+      .bind(args.offerId, c.capType, c.periodKey)
+      .run();
+
+    if ((result.meta?.changes ?? 0) === 0) {
+      return { ok: false, reason: "cap_reached", capType: c.capType };
+    }
+  }
+  return { ok: true };
+}
+
+/**
+ * Reserve one click against DAILY_CLICK / TOTAL_CLICK limits.
+ * Limits come from offer_cap_counters.limit_value (set by ops/admin).
+ * No limit rows → allow (unlimited clicks).
+ */
+export async function reserveClickCap(
+  env: EnvWithCaps,
+  args: { offerId: string; organizationId: string }
+): Promise<CapCheckResult> {
+  const clickLimits = await loadClickLimits(env.DB, args.offerId);
+  if (clickLimits.dailyClick == null && clickLimits.totalClick == null) {
+    // Still track counts via DO when bound (no hard limit)
+    if (env.CAPS) {
+      try {
+        await reserveClickViaDO(env, args, clickLimits);
+      } catch {
+        /* non-fatal count tracking */
+      }
+    }
+    return { ok: true };
+  }
+
+  if (env.CAPS) {
+    try {
+      return await reserveClickViaDO(env, args, clickLimits);
+    } catch (err) {
+      console.warn("DO click cap failed, D1 fallback", err);
+      return reserveClickViaD1(env.DB, args, clickLimits);
+    }
+  }
+  return reserveClickViaD1(env.DB, args, clickLimits);
 }

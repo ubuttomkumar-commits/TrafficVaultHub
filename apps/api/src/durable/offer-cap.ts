@@ -1,5 +1,5 @@
 /**
- * Per-offer Durable Object for concurrency-safe conversion/budget caps.
+ * Per-offer Durable Object for concurrency-safe conversion, budget, and click caps.
  * Authoritative in-memory counters; flushes to D1 offer_cap_counters after reserve.
  */
 
@@ -7,6 +7,8 @@ export type CapLimits = {
   dailyConversion: number | null;
   totalConversion: number | null;
   budgetMinor: number | null;
+  dailyClick: number | null;
+  totalClick: number | null;
   currency: string;
 };
 
@@ -15,6 +17,8 @@ type CounterState = {
   dailyCount: number;
   totalCount: number;
   budgetSpent: number;
+  dailyClickCount: number;
+  totalClickCount: number;
   limits: CapLimits;
   initialized: boolean;
 };
@@ -22,6 +26,15 @@ type CounterState = {
 function utcDayKey(): string {
   return new Date().toISOString().slice(0, 10);
 }
+
+const EMPTY_LIMITS: CapLimits = {
+  dailyConversion: null,
+  totalConversion: null,
+  budgetMinor: null,
+  dailyClick: null,
+  totalClick: null,
+  currency: "USD",
+};
 
 export class OfferCapDO implements DurableObject {
   private state: DurableObjectState;
@@ -37,16 +50,6 @@ export class OfferCapDO implements DurableObject {
     const url = new URL(request.url);
     const path = url.pathname;
 
-    if (request.method === "POST" && path === "/init") {
-      const body = (await request.json()) as {
-        limits: CapLimits;
-        offerId: string;
-        organizationId: string;
-      };
-      await this.ensureLoaded(body.offerId, body.organizationId, body.limits);
-      return Response.json({ ok: true, counters: this.snapshot() });
-    }
-
     if (request.method === "POST" && path === "/reserve") {
       const body = (await request.json()) as {
         offerId: string;
@@ -55,9 +58,26 @@ export class OfferCapDO implements DurableObject {
         commissionMinor: number;
       };
       await this.ensureLoaded(body.offerId, body.organizationId, body.limits);
-      const result = this.tryReserve(body.commissionMinor);
+      const result = this.tryReserveConversion(body.commissionMinor);
       if (result.ok) {
-        // Persist after successful in-memory reserve (best-effort flush)
+        this.state.waitUntil(
+          this.flushToD1(body.offerId, body.organizationId).catch((err) =>
+            console.error("cap flush failed", err)
+          )
+        );
+      }
+      return Response.json(result);
+    }
+
+    if (request.method === "POST" && path === "/reserve-click") {
+      const body = (await request.json()) as {
+        offerId: string;
+        organizationId: string;
+        limits: CapLimits;
+      };
+      await this.ensureLoaded(body.offerId, body.organizationId, body.limits);
+      const result = this.tryReserveClick();
+      if (result.ok) {
         this.state.waitUntil(
           this.flushToD1(body.offerId, body.organizationId).catch((err) =>
             console.error("cap flush failed", err)
@@ -85,49 +105,84 @@ export class OfferCapDO implements DurableObject {
       dailyCount: this.counters.dailyCount,
       totalCount: this.counters.totalCount,
       budgetSpent: this.counters.budgetSpent,
+      dailyClickCount: this.counters.dailyClickCount,
+      totalClickCount: this.counters.totalClickCount,
       limits: this.counters.limits,
+    };
+  }
+
+  private mergeLimits(incoming: CapLimits, existing?: CapLimits): CapLimits {
+    const base = existing ?? EMPTY_LIMITS;
+    return {
+      dailyConversion: incoming.dailyConversion ?? base.dailyConversion,
+      totalConversion: incoming.totalConversion ?? base.totalConversion,
+      budgetMinor: incoming.budgetMinor ?? base.budgetMinor,
+      dailyClick: incoming.dailyClick ?? base.dailyClick,
+      totalClick: incoming.totalClick ?? base.totalClick,
+      currency: incoming.currency || base.currency,
     };
   }
 
   private async ensureLoaded(
     offerId: string,
-    organizationId: string,
+    _organizationId: string,
     limits: CapLimits
   ) {
+    const today = utcDayKey();
+
     if (this.counters?.initialized) {
-      // Roll daily key if date changed
-      const today = utcDayKey();
       if (this.counters.dailyKey !== today) {
         this.counters.dailyKey = today;
         this.counters.dailyCount = 0;
+        this.counters.dailyClickCount = 0;
       }
-      this.counters.limits = limits;
+      this.counters.limits = this.mergeLimits(limits, this.counters.limits);
       return;
     }
 
     const stored = await this.state.storage.get<CounterState>("counters");
-    const today = utcDayKey();
 
     if (stored) {
-      this.counters = stored;
+      this.counters = {
+        ...stored,
+        dailyClickCount: stored.dailyClickCount ?? 0,
+        totalClickCount: stored.totalClickCount ?? 0,
+        limits: this.mergeLimits(
+          limits,
+          stored.limits
+            ? { ...EMPTY_LIMITS, ...stored.limits }
+            : EMPTY_LIMITS
+        ),
+        initialized: true,
+      };
       if (this.counters.dailyKey !== today) {
         this.counters.dailyKey = today;
         this.counters.dailyCount = 0;
+        this.counters.dailyClickCount = 0;
       }
-      this.counters.limits = limits;
-      this.counters.initialized = true;
     } else {
-      // Hydrate from D1 if rows exist
       let dailyCount = 0;
       let totalCount = 0;
       let budgetSpent = 0;
+      let dailyClickCount = 0;
+      let totalClickCount = 0;
+      let dailyClickLimit: number | null = limits.dailyClick;
+      let totalClickLimit: number | null = limits.totalClick;
+
       try {
         const rows = await this.env.DB.prepare(
-          `SELECT cap_type, period_key, current_value FROM offer_cap_counters
-           WHERE offer_id = ? AND cap_type IN ('DAILY_CONVERSION','TOTAL_CONVERSION','BUDGET')`
+          `SELECT cap_type, period_key, current_value, limit_value FROM offer_cap_counters
+           WHERE offer_id = ? AND cap_type IN (
+             'DAILY_CONVERSION','TOTAL_CONVERSION','BUDGET','DAILY_CLICK','TOTAL_CLICK'
+           )`
         )
           .bind(offerId)
-          .all<{ cap_type: string; period_key: string; current_value: number }>();
+          .all<{
+            cap_type: string;
+            period_key: string;
+            current_value: number;
+            limit_value: number | null;
+          }>();
         for (const r of rows.results ?? []) {
           if (r.cap_type === "DAILY_CONVERSION" && r.period_key === today) {
             dailyCount = r.current_value;
@@ -138,9 +193,17 @@ export class OfferCapDO implements DurableObject {
           if (r.cap_type === "BUDGET" && r.period_key === "lifetime") {
             budgetSpent = r.current_value;
           }
+          if (r.cap_type === "DAILY_CLICK" && r.period_key === today) {
+            dailyClickCount = r.current_value;
+            if (r.limit_value != null) dailyClickLimit = r.limit_value;
+          }
+          if (r.cap_type === "TOTAL_CLICK" && r.period_key === "lifetime") {
+            totalClickCount = r.current_value;
+            if (r.limit_value != null) totalClickLimit = r.limit_value;
+          }
         }
       } catch {
-        /* cold start without D1 rows is fine */
+        /* cold start ok */
       }
 
       this.counters = {
@@ -148,7 +211,16 @@ export class OfferCapDO implements DurableObject {
         dailyCount,
         totalCount,
         budgetSpent,
-        limits,
+        dailyClickCount,
+        totalClickCount,
+        limits: this.mergeLimits(
+          {
+            ...limits,
+            dailyClick: dailyClickLimit,
+            totalClick: totalClickLimit,
+          },
+          EMPTY_LIMITS
+        ),
         initialized: true,
       };
     }
@@ -156,15 +228,12 @@ export class OfferCapDO implements DurableObject {
     await this.state.storage.put("counters", this.counters);
   }
 
-  private tryReserve(commissionMinor: number): {
+  private tryReserveConversion(commissionMinor: number): {
     ok: boolean;
     reason?: string;
     capType?: string;
-    counters?: ReturnType<OfferCapDO["snapshot"]>;
   } {
-    if (!this.counters) {
-      return { ok: false, reason: "not_initialized" };
-    }
+    if (!this.counters) return { ok: false, reason: "not_initialized" };
     const { limits } = this.counters;
 
     if (
@@ -189,10 +258,36 @@ export class OfferCapDO implements DurableObject {
     this.counters.dailyCount += 1;
     this.counters.totalCount += 1;
     this.counters.budgetSpent += Math.max(0, commissionMinor);
-    // fire-and-forget storage put
     void this.state.storage.put("counters", this.counters);
+    return { ok: true };
+  }
 
-    return { ok: true, counters: this.snapshot() };
+  private tryReserveClick(): {
+    ok: boolean;
+    reason?: string;
+    capType?: string;
+  } {
+    if (!this.counters) return { ok: false, reason: "not_initialized" };
+    const { limits } = this.counters;
+
+    if (
+      limits.dailyClick != null &&
+      this.counters.dailyClickCount + 1 > limits.dailyClick
+    ) {
+      return { ok: false, reason: "cap_reached", capType: "DAILY_CLICK" };
+    }
+    if (
+      limits.totalClick != null &&
+      this.counters.totalClickCount + 1 > limits.totalClick
+    ) {
+      return { ok: false, reason: "cap_reached", capType: "TOTAL_CLICK" };
+    }
+
+    // No click limits configured → allow
+    this.counters.dailyClickCount += 1;
+    this.counters.totalClickCount += 1;
+    void this.state.storage.put("counters", this.counters);
+    return { ok: true };
   }
 
   private async flushToD1(offerId: string, organizationId: string) {
@@ -220,21 +315,39 @@ export class OfferCapDO implements DurableObject {
         limit: c.limits.budgetMinor,
         currency: c.limits.currency,
       },
+      {
+        type: "DAILY_CLICK",
+        period: c.dailyKey,
+        value: c.dailyClickCount,
+        limit: c.limits.dailyClick,
+        currency: null as string | null,
+      },
+      {
+        type: "TOTAL_CLICK",
+        period: "lifetime",
+        value: c.totalClickCount,
+        limit: c.limits.totalClick,
+        currency: null as string | null,
+      },
     ];
 
     for (const op of ops) {
-      if (op.limit == null) continue;
+      // Always flush counts when we have a limit OR when value > 0 for click tracking visibility
+      if (op.limit == null && op.value === 0) continue;
+      if (op.limit == null && !op.type.includes("CLICK")) continue;
+
       await this.env.DB.prepare(
         `INSERT INTO offer_cap_counters (
            id, offer_id, organization_id, cap_type, period_key, currency,
            limit_value, current_value, exhausted_at
          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?,
-           CASE WHEN ? >= ? THEN strftime('%Y-%m-%dT%H:%M:%fZ','now') ELSE NULL END)
+           CASE WHEN ? IS NOT NULL AND ? >= ? THEN strftime('%Y-%m-%dT%H:%M:%fZ','now') ELSE NULL END)
          ON CONFLICT(offer_id, cap_type, period_key) DO UPDATE SET
            current_value = excluded.current_value,
-           limit_value = excluded.limit_value,
+           limit_value = COALESCE(excluded.limit_value, offer_cap_counters.limit_value),
            exhausted_at = CASE
-             WHEN excluded.current_value >= excluded.limit_value
+             WHEN COALESCE(excluded.limit_value, offer_cap_counters.limit_value) IS NOT NULL
+              AND excluded.current_value >= COALESCE(excluded.limit_value, offer_cap_counters.limit_value)
              THEN strftime('%Y-%m-%dT%H:%M:%fZ','now')
              ELSE offer_cap_counters.exhausted_at
            END,
@@ -249,6 +362,7 @@ export class OfferCapDO implements DurableObject {
           op.currency,
           op.limit,
           op.value,
+          op.limit,
           op.value,
           op.limit
         )

@@ -346,3 +346,13 @@ See `docs/PHASE_A_AUDIT.md`.
 - Hydrates from D1; flushes counters after reserve
 - Fallback to D1 atomic UPDATE if DO call fails
 - Deployed 6b078298 with CAPS binding live
+
+---
+
+## 21. Click caps (2026-10-21)
+
+- DAILY_CLICK / TOTAL_CLICK via OfferCapDO `/reserve-click` + D1 fallback
+- Limits from offer_cap_counters.limit_value (ops sets limits on rows)
+- GET /api/v1/t/:code returns 429 when click cap reached
+- CAP_REACHED pause includes click exhaustion
+- Deployed ba42042c

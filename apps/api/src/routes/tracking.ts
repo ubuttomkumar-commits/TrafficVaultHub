@@ -6,6 +6,7 @@
 
 import { Hono } from "hono";
 import type { Env } from "../env";
+import { pauseOfferIfCapsExhausted, reserveClickCap } from "../lib/caps";
 
 export const trackingRoutes = new Hono<{ Bindings: Env }>();
 
@@ -96,6 +97,24 @@ trackingRoutes.get("/:code", async (c) => {
     );
   }
 
+  const clickCap = await reserveClickCap(c.env, {
+    offerId: row.offer_id,
+    organizationId: row.offer_organization_id,
+  });
+  if (!clickCap.ok) {
+    return c.json(
+      {
+        error: {
+          code: "cap_reached",
+          message: "Offer click cap reached",
+          capType: clickCap.capType ?? null,
+          correlationId,
+        },
+      },
+      429
+    );
+  }
+
   const clickId = crypto.randomUUID();
   const ip = c.req.header("cf-connecting-ip") ?? "";
   const ua = c.req.header("user-agent") ?? "";
@@ -160,6 +179,13 @@ trackingRoutes.get("/:code", async (c) => {
       503
     );
   }
+
+  await pauseOfferIfCapsExhausted(
+    c.env.DB,
+    row.offer_id,
+    row.offer_organization_id,
+    correlationId
+  );
 
   // Redirect — append click id if destination allows query (safe append)
   let dest = row.destination_url;
