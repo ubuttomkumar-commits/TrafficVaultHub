@@ -265,3 +265,15 @@ See `docs/PHASE_A_AUDIT.md`.
 - Optional HMAC when POSTBACK_HMAC_SECRET set
 - Queue message conversion.received when CONVERSION_QUEUE bound
 - Deployed version aa7245e2 on workers.dev
+
+---
+
+## 13. Conversion approve → ledger post (2026-10-21)
+
+- `POST /api/v1/conversions/:id/approve` — platform Super Admin / Ops / Finance only
+- Posts `journal_entries` CONVERSION_COMMISSION on affiliate org
+- Ensures `ledger_accounts` AFFILIATE_PAYABLE exists
+- Idempotent via `ledger:commission:{conversionId}`
+- Lifecycle → LEDGER_POSTED + status history
+- `POST /api/v1/conversions/:id/reject` — no ledger credit
+- Deployed version a48d9006
