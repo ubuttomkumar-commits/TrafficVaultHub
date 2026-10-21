@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { DataFlowNetwork } from "../components/DataFlowNetwork";
+import { IllustrativeCharts } from "../components/IllustrativeCharts";
 import styles from "./LandingPage.module.css";
 
 const PUBLISHER_PROBLEMS = [
@@ -211,6 +212,7 @@ export function LandingPage() {
                     </span>
                   </div>
                 </div>
+                <IllustrativeCharts />
                 <div className={styles.flowNodes} aria-hidden>
                   <span>Publisher</span>
                   <span className={styles.flowLine} />

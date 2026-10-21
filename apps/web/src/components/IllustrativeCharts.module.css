@@ -1,0 +1,171 @@
+.root {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 0.65rem;
+  opacity: 0.85;
+}
+
+.chartCard {
+  padding: 0.65rem 0.7rem 0.55rem;
+  border-radius: 0.55rem;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  background: rgba(8, 12, 22, 0.65);
+}
+
+.chartHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.45rem;
+  font-size: 0.65rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.badge {
+  font-size: 0.58rem;
+  padding: 0.12rem 0.4rem;
+  border-radius: 999px;
+  border: 1px solid rgba(34, 211, 238, 0.3);
+  color: #22d3ee;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 52px;
+}
+
+.barTrack {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  border-radius: 2px;
+  background: rgba(148, 163, 184, 0.06);
+}
+
+.barFill {
+  width: 100%;
+  height: 0;
+  border-radius: 2px 2px 0 0;
+  background: linear-gradient(180deg, #22d3ee, #3b82f6 70%, #818cf8);
+  opacity: 0.85;
+  transition: height 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: 0s;
+}
+
+.active .barFill {
+  height: var(--h);
+  transition-delay: var(--delay);
+}
+
+.lineSvg {
+  width: 100%;
+  height: 52px;
+  display: block;
+}
+
+.linePath {
+  stroke-dasharray: 280;
+  stroke-dashoffset: 280;
+  transition: stroke-dashoffset 1.1s ease-out;
+}
+
+.active .linePath {
+  stroke-dashoffset: 0;
+}
+
+.lineArea {
+  opacity: 0;
+  transition: opacity 0.8s ease 0.2s;
+}
+
+.active .lineArea {
+  opacity: 1;
+}
+
+.ringRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem;
+}
+
+.ringCard {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 0.55rem;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  background: rgba(8, 12, 22, 0.65);
+}
+
+.ring {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  transform: rotate(-90deg);
+}
+
+.ringBg {
+  fill: none;
+  stroke: rgba(148, 163, 184, 0.15);
+  stroke-width: 3;
+}
+
+.ringFg {
+  fill: none;
+  stroke: #22d3ee;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 97.4;
+  stroke-dashoffset: 97.4;
+  transition: stroke-dashoffset 1s ease-out 0.15s;
+}
+
+.ringViolet {
+  stroke: #818cf8;
+}
+
+.active .ringFg {
+  /* circumference ~ 97.4; offset = 97.4 * (1 - pct/100) */
+  stroke-dashoffset: calc(97.4 * (1 - var(--pct) / 100));
+}
+
+.ringMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.ringLabel {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #e8eef9;
+}
+
+.ringNote {
+  font-size: 0.62rem;
+  color: #64748b;
+}
+
+.reduced .barFill,
+.reduced .linePath,
+.reduced .ringFg {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .barFill,
+  .linePath,
+  .lineArea,
+  .ringFg {
+    transition: none !important;
+  }
+}
