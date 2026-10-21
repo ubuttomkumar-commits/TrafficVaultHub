@@ -326,3 +326,13 @@ See `docs/PHASE_A_AUDIT.md`.
 - UI: /login, /earnings on https://trafficvaulthub.pages.dev
 - docs/PRD_STATUS.md — honest complete vs residual matrix
 - API worker version e6195cbb
+
+---
+
+## 19. Cap enforcement on postback (2026-10-21)
+
+- apps/api/src/lib/caps.ts — DAILY_CONVERSION, TOTAL_CONVERSION, BUDGET
+- Atomic UPDATE … WHERE current_value + delta <= limit_value
+- Reject postback with reason cap_reached; pause LIVE → CAP_REACHED
+- Residual risk: multi-region races without Durable Objects
+- Deployed 731c31e0

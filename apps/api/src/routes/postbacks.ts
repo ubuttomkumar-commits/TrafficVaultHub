@@ -6,6 +6,7 @@
 
 import { Hono } from "hono";
 import type { Env } from "../env";
+import { pauseOfferIfCapsExhausted, reserveConversionCap } from "../lib/caps";
 
 export const postbackRoutes = new Hono<{ Bindings: Env }>();
 
@@ -271,6 +272,25 @@ async function handlePostback(c: {
   const conversionId = crypto.randomUUID();
   const historyId = crypto.randomUUID();
 
+  const cap = await reserveConversionCap(c.env.DB, {
+    offerId: click.offer_id,
+    organizationId: click.offer_organization_id,
+    commissionMinor,
+    currency: commissionCurrency,
+  });
+  if (!cap.ok) {
+    return rejectConversion(c, {
+      click,
+      externalId,
+      correlationId,
+      reason: "cap_reached",
+      event: eventName,
+      occurredAt,
+      transactionId: params.transaction_id,
+    });
+  }
+
+
   try {
     await c.env.DB.batch([
       c.env.DB.prepare(
@@ -366,6 +386,13 @@ async function handlePostback(c: {
   } catch {
     /* queue optional */
   }
+
+  await pauseOfferIfCapsExhausted(
+    c.env.DB,
+    click.offer_id,
+    click.offer_organization_id,
+    correlationId
+  );
 
   return c.json(
     {
