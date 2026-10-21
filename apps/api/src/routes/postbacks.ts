@@ -7,8 +7,10 @@
 import { Hono } from "hono";
 import type { Env } from "../env";
 import { pauseOfferIfCapsExhausted, reserveConversionCap } from "../lib/caps";
+import { rateLimit } from "../middleware/rate-limit";
 
 export const postbackRoutes = new Hono<{ Bindings: Env }>();
+postbackRoutes.use("*", rateLimit({ keyPrefix: "postback", limit: 120, windowSeconds: 60 }));
 
 type ClickRow = {
   click_id: string;

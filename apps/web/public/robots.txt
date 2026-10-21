@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /login
+Disallow: /earnings
+Disallow: /offer-caps
+Disallow: /campaign-studio
+Sitemap: https://trafficvaulthub.pages.dev/sitemap.xml

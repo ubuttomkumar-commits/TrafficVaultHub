@@ -8,6 +8,9 @@ import { LoginPage } from "./pages/LoginPage";
 import { EarningsPage } from "./pages/EarningsPage";
 import { OfferCapsPage } from "./pages/OfferCapsPage";
 import { CampaignStudioPage } from "./pages/CampaignStudioPage";
+import { PrivacyPage, TermsPage } from "./pages/LegalPage";
+import { CompliancePage } from "./pages/CompliancePage";
+import { PayoutsPage } from "./pages/PayoutsPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 
 function AppRoutes() {
@@ -30,6 +33,10 @@ function AppRoutes() {
         <Route path="/earnings" element={<EarningsPage />} />
         <Route path="/offer-caps" element={<OfferCapsPage />} />
         <Route path="/campaign-studio" element={<CampaignStudioPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/terms" element={<TermsPage />} />
+        <Route path="/compliance" element={<CompliancePage />} />
+        <Route path="/payouts" element={<PayoutsPage />} />
         <Route path="/categories" element={<CategoriesPage />} />
         <Route path="/health" element={<HealthPage />} />
         <Route path="*" element={<NotFoundPage />} />

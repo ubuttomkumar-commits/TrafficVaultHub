@@ -1,3 +1,5 @@
+.skipLink{position:absolute;left:-9999px;top:0;z-index:100;padding:.5rem 1rem;background:var(--color-accent-cyan);color:#0a0c12;font-weight:600}
+.skipLink:focus{left:.75rem;top:.75rem}
 .shell {
   display: flex;
   flex-direction: column;

@@ -9,6 +9,7 @@ import type { Env } from "../env";
 import { hashPassword, verifyPassword } from "../lib/password";
 import { sha256Hex } from "../lib/crypto";
 import { requireAuth } from "../middleware/auth";
+import { rateLimit } from "../middleware/rate-limit";
 
 export const authRoutes = new Hono<{ Bindings: Env }>();
 
@@ -37,7 +38,7 @@ type CredRow = {
   user_status: string;
 };
 
-authRoutes.post("/login", async (c) => {
+authRoutes.post("/login", rateLimit({ keyPrefix: "login", limit: 20, windowSeconds: 60 }), async (c) => {
   const correlationId = c.get("correlationId");
   let body: { email?: string; password?: string };
   try {
