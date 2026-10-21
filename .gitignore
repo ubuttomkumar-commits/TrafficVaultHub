@@ -47,4 +47,5 @@ wrangler.toml.bak
 *.tgz
 .cache/
 public/assets/aistudio/
-
+.aistudio/
+bun.lock

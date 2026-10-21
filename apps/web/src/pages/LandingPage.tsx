@@ -1,465 +1,501 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { HeroVaultScene } from "../components/HeroVaultScene";
-import { ConversionEvidenceTrail } from "../components/ConversionEvidenceTrail";
-import { TrustGraph } from "../components/TrustGraph";
-import { CampaignRadar } from "../components/CampaignRadar";
-import { OfferDiscoveryExplorer } from "../components/OfferDiscoveryExplorer";
 import styles from "./LandingPage.module.css";
 
-const PUBLISHER_PROBLEMS = [
-  "Unexplained rejected conversions without audit trails",
-  "Delayed or uncertain payments with unclear pending vs payable status",
-  "Missing conversions and broken unauthenticated postbacks",
-  "Difficulty finding relevant verified inventory across verticals",
-  "Unexpected campaign pauses and arbitrary cap changes",
-  "Poor dispute support with no evidence submission channel",
-];
-
-const PUBLISHER_SOLUTIONS = [
-  "Explainable conversion decisions with standardized, human-readable reason codes",
-  "Conversion Confidence Monitor for tracking health, latency, and delayed events",
-  "Transparent Earnings Center separating pending, approved, payable, paid, and held balances",
-  "Smart Offer Discovery with GEO, device, payout model, and category filters",
-  "Dedicated dispute resolution workflow grounded in recorded server-side evidence",
-  "SubID attribution telemetry (sub1–sub3) preserved across all conversion lifecycles",
-];
-
-const ADVERTISER_PROBLEMS = [
-  "Fake, duplicate, or low-quality conversions draining marketing budgets",
-  "Budget leakage and overspending from slow or missing cap enforcement",
-  "Unreliable affiliate traffic with proxy clusters and datacenter bot farms",
-  "Missing or incorrectly configured S2S postback callbacks",
-  "Limited SubID visibility preventing campaign optimization",
-  "Slow compliance workflows delaying campaign launches and updates",
-];
-
-const ADVERTISER_SOLUTIONS = [
-  "Conversion Quality Shield blocking duplicates, replayed postbacks, and velocity bursts",
-  "Spend Protection with server-enforced caps (Durable Objects) and automatic pause gates",
-  "Live Campaign Health: postbacks, latency, cap utilization, budgets, and reconciliation",
-  "Campaign Launch Studio with versioned payout models, macros, and readiness checks",
-  "In-depth analytics by campaign, publisher, GEO, device, SubID, and conversion event",
-  "Funding and liabilities reconciliation against an append-only double-entry ledger",
-];
-
-const FEATURES = [
-  {
-    title: "Universal Offer Engine",
-    body: "Full support for CPA, CPL, CPI, CPS, CPV, CPE, CPC, CPM, recurring, and custom event-based commissions.",
-  },
-  {
-    title: "Versioned Payout Rules",
-    body: "Every conversion preserves the exact applicable payout terms, billing currency, calculation basis, and effective period.",
-  },
-  {
-    title: "Conversion Evidence Trail",
-    body: "Every event is cryptographically audited: click received -> attribution -> authenticated postback -> idempotency -> eligibility -> risk -> decision -> ledger.",
-  },
-  {
-    title: "Explainable Rejections",
-    body: "Standardized reasons: duplicate, invalid event, expired attribution, ineligible GEO, prohibited traffic source, policy hold, or review.",
-  },
-  {
-    title: "Tracking Recovery Assistant",
-    body: "Surface potentially missing or delayed events using authorized click tokens, postback records, and reconciliation evidence.",
-  },
-  {
-    title: "Smart Offer Marketplace",
-    body: "Searchable discovery by category, GEO, payout model, device, language, traffic source, and approval state.",
-  },
-  {
-    title: "Multi-Dimensional Trust",
-    body: "Verification covering email, phone, business registration, domain ownership, property verification, and compliance clearance.",
-  },
-  {
-    title: "Unified Incident Room",
-    body: "Operational visibility into tracking failures, queue telemetry, reconciliation gaps, compliance cases, and payout inquiries.",
-  },
-  {
-    title: "Category-Agnostic Core",
-    body: "Database-driven categories—from cybersecurity and SaaS to mobile apps, gaming, finance, and approved restricted verticals.",
-  },
-];
-
-const FAQS = [
-  {
-    q: "What is the minimum payout threshold and payment schedule?",
-    a: "The minimum payout threshold is $50 (5,000 minor units). Supported rails include Binance Pay (crypto) and wire transfers. Funds move to PAYABLE status once conversions are approved and hold periods clear.",
-  },
-  {
-    q: "How does TrafficVaultHub prevent duplicate postback fraud?",
-    a: "Every S2S postback is evaluated against a deterministic compound idempotency key (organizationId + externalConversionId). Replayed or duplicate postbacks are acknowledged without generating redundant ledger credits.",
-  },
-  {
-    q: "How are campaign caps enforced across edge nodes?",
-    a: "Caps are enforced in real-time via Cloudflare Durable Objects (OfferCapDO) with atomic in-memory mutexes and automatic atomic D1 database fallbacks. Once a daily or total cap is reached, traffic is safely paused or routed via Smartlinks.",
-  },
-  {
-    q: "Can publishers dispute a rejected conversion?",
-    a: "Yes. The platform provides a formal Disputes & Appeals workflow where affiliates can provide transaction evidence, server timestamps, or order receipts for manual compliance review.",
-  },
-];
-
-const STEPS = [
-  {
-    n: "01",
-    title: "Join & verify",
-    body: "Publishers complete identity and domain verification before accessing live inventory and payouts.",
-  },
-  {
-    n: "02",
-    title: "Discover & apply",
-    body: "Find eligible offers by vertical, payout model, and GEO with transparent commission terms.",
-  },
-  {
-    n: "03",
-    title: "Track securely",
-    body: "Traffic flows through encrypted click IDs, deep SubIDs, and authenticated SHA-256 S2S postbacks.",
-  },
-  {
-    n: "04",
-    title: "Review & pay",
-    body: "Valid conversions are explained, ledger-posted in integer minor units, and made payout-eligible.",
-  },
-];
-
-const PAYOUT_STEPS = [
-  "Received",
-  "Reviewed",
-  "Approved",
-  "Payable",
-  "Initiated",
-  "Paid",
-];
-
-const TRUST_ITEMS = [
-  "Server-side authorization and tenant isolation",
-  "Secure sessions and role-based permissions (PBKDF2 Web Crypto)",
-  "Idempotent conversion processing and duplicate replay protection",
-  "Authenticated S2S postbacks with HMAC-SHA256 digital signature checks",
-  "Append-only double-entry financial ledger in integer minor currency units",
-  "Private compliance evidence storage with restricted tenant isolation",
-  "Audit logs tracking all privileged administrative actions",
-  "Privacy-aware collection and strict data minimization",
-  "Explainable risk signals without exposing exploitable detection thresholds",
+const CATEGORIES = [
+  { id: "dating", name: "Dating & Relationships", icon: "❤️", bg: "linear-gradient(135deg, #ec4899, #be185d)", shadow: "rgba(236, 72, 153, 0.35)" },
+  { id: "apps", name: "Mobile Apps & Software", icon: "📱", bg: "linear-gradient(135deg, #0284c7, #0369a1)", shadow: "rgba(2, 132, 199, 0.35)" },
+  { id: "gaming", name: "Gaming & Entertainment", icon: "🎮", bg: "linear-gradient(135deg, #7c3aed, #5b21b6)", shadow: "rgba(124, 58, 237, 0.35)" },
+  { id: "ecommerce", name: "E-commerce & Retail", icon: "🛒", bg: "linear-gradient(135deg, #059669, #047857)", shadow: "rgba(5, 150, 105, 0.35)" },
+  { id: "finance", name: "Finance & Business", icon: "💰", bg: "linear-gradient(135deg, #d97706, #b45309)", shadow: "rgba(217, 119, 6, 0.35)" },
+  { id: "education", name: "Education & Employment", icon: "🎓", bg: "linear-gradient(135deg, #2563eb, #1d4ed8)", shadow: "rgba(37, 99, 235, 0.35)" },
+  { id: "travel", name: "Travel & Hospitality", icon: "✈️", bg: "linear-gradient(135deg, #db2777, #9d174d)", shadow: "rgba(219, 39, 119, 0.35)" },
+  { id: "health", name: "Health & Wellness", icon: "🩺", bg: "linear-gradient(135deg, #0d9488, #0f766e)", shadow: "rgba(13, 148, 136, 0.35)" },
+  { id: "home", name: "Home & Local Services", icon: "🏠", bg: "linear-gradient(135deg, #6366f1, #4338ca)", shadow: "rgba(99, 102, 241, 0.35)" },
+  { id: "media", name: "Media & Content", icon: "▶️", bg: "linear-gradient(135deg, #8b5cf6, #6d28d9)", shadow: "rgba(139, 92, 246, 0.35)" },
+  { id: "surveys", name: "Surveys & Rewards", icon: "🎁", bg: "linear-gradient(135deg, #ea580c, #c2410c)", shadow: "rgba(234, 88, 12, 0.35)" },
+  { id: "other", name: "Other", icon: "•••", bg: "linear-gradient(135deg, #1e293b, #0f172a)", shadow: "rgba(30, 41, 59, 0.35)" },
 ];
 
 export function LandingPage() {
+  const [themeDark, setThemeDark] = useState(true);
+
   return (
     <div className={styles.page}>
       <a href="#main" className={styles.skip}>
         Skip to content
       </a>
 
+      {/* SECTION 1 — COMPACT PREMIUM DARK NAVIGATION */}
       <header className={styles.topNav}>
         <div className={styles.topInner}>
           <Link to="/" className={styles.brand} aria-label="TrafficVaultHub home">
-            <span className={styles.logoMark} aria-hidden />
-            <span className={styles.logoText}>TrafficVaultHub</span>
+            <div className={styles.logoIcon}>
+              <span className={styles.logoV}>V</span>
+            </div>
+            <div className={styles.brandCol}>
+              <span className={styles.brandName}>TrafficVaultHub</span>
+              <span className={styles.brandSub}>Universal CPA Network</span>
+            </div>
           </Link>
-          <nav className={styles.navLinks} aria-label="Marketing">
-            <a href="#solutions">Solutions</a>
-            <a href="#pipeline">Evidence Trail</a>
-            <a href="#offers">Marketplace</a>
-            <a href="#trust">Trust Graph</a>
-            <a href="#radar">Radar</a>
-            <a href="#faq">FAQ</a>
-            <Link to="/offers">Browse Offers</Link>
-            <Link to="/login" className={styles.navCta}>
-              Sign In
-            </Link>
+
+          <nav className={styles.navLinks} aria-label="Primary Navigation">
+            <Link to="/" className={`${styles.navItem} ${styles.navItemActive}`}>Home</Link>
+            <Link to="/offers" className={styles.navItem}>Offers</Link>
+            <a href="#problems" className={styles.navItem}>Publishers</a>
+            <a href="#problems" className={styles.navItem}>Advertisers</a>
+            <Link to="/conversion-confidence" className={styles.navItem}>Resources ▾</Link>
+            <a href="#trust" className={styles.navItem}>About ▾</a>
           </nav>
+
+          <div className={styles.navActions}>
+            <button
+              type="button"
+              className={styles.themeBtn}
+              onClick={() => setThemeDark(!themeDark)}
+              aria-label="Toggle theme display"
+              title="Toggle theme"
+            >
+              ☀️
+            </button>
+            <Link to="/login" className={styles.loginBtn}>
+              Login
+            </Link>
+            <Link to="/login" className={styles.getStartedBtn}>
+              Get Started
+            </Link>
+          </div>
         </div>
       </header>
 
       <main id="main">
-        {/* HERO SECTION */}
-        <section className={styles.hero} aria-labelledby="hero-title">
-          <div className={styles.heroGlow} aria-hidden />
+        {/* SECTION 2 — CINEMATIC HERO */}
+        <section className={styles.heroSection} aria-labelledby="hero-title">
           <div className={styles.heroGrid}>
             <div className={styles.heroCopy}>
-              <p className={styles.eyebrow}>Universal CPA Network · The Network That Shows Its Work</p>
-              <h1 id="hero-title" className={styles.heroTitle}>
-                More Conversions. More Revenue. More Trust.
+              <div className={styles.heroTaglinePill}>
+                The CPA Network That Shows Its Work.
+              </div>
+              <h1 id="hero-title" className={styles.heroHeadline}>
+                More <span className={styles.cyanText}>Conversions.</span><br />
+                More <span className={styles.gradientRev}>Revenue.</span><br />
+                More <span className={styles.purpleText}>Trust.</span>
               </h1>
-              <p className={styles.heroSub}>
+              <p className={styles.heroSubtext}>
                 Discover relevant offers, track conversions with greater transparency,
                 and manage affiliate campaigns with stronger financial and fraud controls.
               </p>
               <div className={styles.heroCtas}>
-                <Link to="/login" className={styles.btnPrimary}>
-                  Start as Publisher
+                <Link to="/login" className={styles.ctaPublisher}>
+                  Start as Publisher →
                 </Link>
-                <Link to="/campaign-studio" className={styles.btnSecondary}>
-                  Start as Advertiser
+                <Link to="/campaign-studio" className={styles.ctaAdvertiser}>
+                  Start as Advertiser →
                 </Link>
               </div>
-              <p className={styles.trustLine}>
-                Minimum payout: $50 · Binance Pay supported · Double-entry financial ledger · Zero float drift
+
+              {/* Four Compact Trust Indicators */}
+              <div className={styles.trustIndicatorsRow}>
+                <div className={styles.trustIndicatorItem}>
+                  <div className={styles.trustIcon}>🔍</div>
+                  <span>Transparent Tracking</span>
+                </div>
+                <div className={styles.trustIndicatorItem}>
+                  <div className={styles.trustIcon}>💳</div>
+                  <span>Flexible Payouts</span>
+                </div>
+                <div className={styles.trustIndicatorItem}>
+                  <div className={styles.trustIcon}>🛡️</div>
+                  <span>Fraud Protection</span>
+                </div>
+                <div className={styles.trustIndicatorItem}>
+                  <div className={styles.trustIcon}>📊</div>
+                  <span>Reliable Reporting</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 3D Digital Vault Visual (Reference Reproduction) */}
+            <div className={styles.vaultArtworkContainer}>
+              <img
+                src="/assets/hero_vault_reference.png"
+                alt="TrafficVaultHub 3D Digital Vault with real-time conversion telemetry and floating analytics panels"
+                className={styles.vaultArtworkImg}
+                loading="eager"
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* SECTION 3 — PUBLISHER AND ADVERTISER VALUE CARDS */}
+        <section id="problems" className={styles.sectionWrap} aria-labelledby="solve-title">
+          <div className={styles.splitSection}>
+            <div>
+              <div className={styles.sectionPill}>Built for Your Success</div>
+              <h2 id="solve-title" className={styles.sectionHeading}>
+                Solve Real <span className={styles.cyanText}>Problems</span>
+              </h2>
+              <p className={styles.sectionText}>
+                Whether you're a publisher looking to grow your earnings or an advertiser
+                seeking quality conversions — we've got you covered.
               </p>
             </div>
 
-            <div className={styles.heroVisual}>
-              <HeroVaultScene />
+            <div className={styles.twoCardsGrid}>
+              {/* For Publishers Card */}
+              <article className={styles.featureCard}>
+                <div>
+                  <div className={styles.cardHead}>
+                    <div className={styles.cardAvatarIcon}>👤</div>
+                    <div>
+                      <h3 className={styles.cardTitle}>For Publishers</h3>
+                      <div className={styles.cardSub}>More earnings. More control.</div>
+                    </div>
+                  </div>
+                  <ul className={styles.cardList}>
+                    <li className={styles.cardListItem}>
+                      <span className={styles.checkCircle}>✓</span>
+                      <span>Understand conversion decisions</span>
+                    </li>
+                    <li className={styles.cardListItem}>
+                      <span className={styles.checkCircle}>✓</span>
+                      <span>Diagnose missing or delayed tracking</span>
+                    </li>
+                    <li className={styles.cardListItem}>
+                      <span className={styles.checkCircle}>✓</span>
+                      <span>Find relevant offers for your traffic</span>
+                    </li>
+                    <li className={styles.cardListItem}>
+                      <span className={styles.checkCircle}>✓</span>
+                      <span>Track pending, <strong>approved</strong> & payable earnings</span>
+                    </li>
+                    <li className={styles.cardListItem}>
+                      <span className={styles.checkCircle}>✓</span>
+                      <span>Resolve disputes with evidence</span>
+                    </li>
+                  </ul>
+                </div>
+                <Link to="/login" className={styles.cardBtnPub}>
+                  Grow as a Publisher →
+                </Link>
+                <img
+                  src="/assets/publisher_avatar_3d.png"
+                  alt=""
+                  aria-hidden="true"
+                  className={styles.cardCharacterImg}
+                  loading="lazy"
+                />
+              </article>
+
+              {/* For Advertisers Card */}
+              <article className={styles.featureCard}>
+                <div>
+                  <div className={styles.cardHead}>
+                    <div className={styles.cardAvatarIcon} style={{ background: "linear-gradient(135deg, #06b6d4, #3b82f6)" }}>📊</div>
+                    <div>
+                      <h3 className={styles.cardTitle}>For Advertisers</h3>
+                      <div className={styles.cardSub} style={{ color: "var(--tvh-cyan)" }}>Better traffic. Higher ROI.</div>
+                    </div>
+                  </div>
+                  <ul className={styles.cardList}>
+                    <li className={styles.cardListItem}>
+                      <span className={styles.checkCircle}>✓</span>
+                      <span>Detect suspicious conversion patterns</span>
+                    </li>
+                    <li className={styles.cardListItem}>
+                      <span className={styles.checkCircle}>✓</span>
+                      <span>Protect campaign budgets and caps</span>
+                    </li>
+                    <li className={styles.cardListItem}>
+                      <span className={styles.checkCircle}>✓</span>
+                      <span>Diagnose postback failures</span>
+                    </li>
+                    <li className={styles.cardListItem}>
+                      <span className={styles.checkCircle}>✓</span>
+                      <span>Analyze campaign performance</span>
+                    </li>
+                    <li className={styles.cardListItem}>
+                      <span className={styles.checkCircle}>✓</span>
+                      <span>Manage compliance & publisher quality</span>
+                    </li>
+                  </ul>
+                </div>
+                <Link to="/campaign-studio" className={styles.cardBtnAdv}>
+                  Launch a Campaign →
+                </Link>
+                <img
+                  src="/assets/advertiser_avatar_3d.png"
+                  alt=""
+                  aria-hidden="true"
+                  className={styles.cardCharacterImg}
+                  loading="lazy"
+                />
+              </article>
             </div>
           </div>
         </section>
 
-        {/* SOLUTIONS SECTION */}
-        <section id="solutions" className={styles.section} aria-labelledby="solutions-title">
-          <h2 id="solutions-title" className={styles.sectionTitle}>
-            Built to Solve the Problems That Break Affiliate Growth.
-          </h2>
-          <div className={styles.twoCol}>
-            <article className={styles.glassCard}>
-              <h3>For Publishers</h3>
-              <p className={styles.cardKicker}>Industry pain points</p>
-              <ul>
-                {PUBLISHER_PROBLEMS.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
-              <p className={styles.cardKicker}>How TrafficVaultHub solves them</p>
-              <ul className={styles.solList}>
-                {PUBLISHER_SOLUTIONS.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
-            </article>
+        {/* SECTION 4 — HOW IT WORKS */}
+        <section id="how" className={styles.sectionWrap} aria-labelledby="how-title">
+          <div className={styles.splitSection}>
+            <div>
+              <div className={styles.sectionPill}>Simple. Transparent. Powerful.</div>
+              <h2 id="how-title" className={styles.sectionHeading}>
+                How It Works
+              </h2>
+              <p className={styles.sectionText}>
+                From discovery to payout — every step is tracked, verified and recorded.
+              </p>
+              <Link to="/conversion-confidence" className={styles.exploreFullBtn}>
+                Explore Full Flow →
+              </Link>
+            </div>
 
-            <article className={styles.glassCard}>
-              <h3>For Advertisers</h3>
-              <p className={styles.cardKicker}>Industry pain points</p>
-              <ul>
-                {ADVERTISER_PROBLEMS.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
-              <p className={styles.cardKicker}>How TrafficVaultHub solves them</p>
-              <ul className={styles.solList}>
-                {ADVERTISER_SOLUTIONS.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
-            </article>
+            <div className={styles.howItWorksBanner}>
+              <img
+                src="/assets/how_it_works_reference.png"
+                alt="How it works 5 steps: 1. Discover Offer, 2. Track Click, 3. Validate Event, 4. Review Conversion, 5. Record Earnings"
+                style={{ width: "100%", height: "auto", display: "block", borderRadius: "0.5rem" }}
+                loading="lazy"
+              />
+            </div>
           </div>
         </section>
 
-        {/* HOW IT WORKS & CONVERSION EVIDENCE TRAIL */}
-        <section id="pipeline" className={styles.section} aria-labelledby="pipeline-title">
-          <h2 id="pipeline-title" className={styles.sectionTitle}>
-            How It Works & Conversion Evidence Trail
-          </h2>
-          <ol className={styles.steps}>
-            {STEPS.map((s) => (
-              <li key={s.n} className={styles.step}>
-                <span className={styles.stepNum} aria-hidden>
-                  {s.n}
-                </span>
-                <h3>{s.title}</h3>
-                <p>{s.body}</p>
-              </li>
-            ))}
-          </ol>
-          <p className="muted" style={{ maxWidth: "42rem", margin: "1.5rem 0 1rem" }}>
-            Every conversion passes through an 8-stage cryptographic lifecycle. Inspect how clicks, postbacks, risk signals, and ledger debits are validated in real time:
-          </p>
-          <ConversionEvidenceTrail />
-        </section>
+        {/* SECTION 5 — OFFER CATEGORIES */}
+        <section id="categories" className={styles.sectionWrap} aria-labelledby="cat-title">
+          <div className={styles.splitSection}>
+            <div>
+              <div className={styles.sectionPill}>Explore Opportunities</div>
+              <h2 id="cat-title" className={styles.sectionHeading}>
+                Offer Categories
+              </h2>
+              <p className={styles.sectionText}>
+                Find your perfect vertical. Millions of opportunities across 12+ categories.
+              </p>
+              <Link to="/offers" className={styles.exploreFullBtn} style={{ background: "var(--tvh-gradient-btn)" }}>
+                Browse All Offers →
+              </Link>
+            </div>
 
-        {/* DYNAMIC OFFER DISCOVERY EXPLORER */}
-        <section id="offers" className={styles.section} aria-labelledby="offers-title">
-          <h2 id="offers-title" className={styles.sectionTitle}>
-            Interactive Offer Discovery Explorer
-          </h2>
-          <p className="muted" style={{ maxWidth: "42rem", margin: "0 0 1rem" }}>
-            Discover top-converting verified offers across cybersecurity, enterprise SaaS, gaming, and consumer verticals. Payouts locked into versioned contract terms.
-          </p>
-          <OfferDiscoveryExplorer />
-        </section>
-
-        {/* FEATURES BENTO */}
-        <section id="features" className={styles.section} aria-labelledby="features-title">
-          <h2 id="features-title" className={styles.sectionTitle}>
-            Everything a Modern CPA Network Needs.
-          </h2>
-          <div className={styles.bento}>
-            {FEATURES.map((f, i) => (
-              <article
-                key={f.title}
-                className={`${styles.bentoCard} ${i === 0 || i === 2 ? styles.bentoWide : ""}`}
-              >
-                <h3>{f.title}</h3>
-                <p>{f.body}</p>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        {/* CAMPAIGN RADAR & SPEND PROTECTION */}
-        <section id="radar" className={styles.section} aria-labelledby="radar-title">
-          <h2 id="radar-title" className={styles.sectionTitle}>
-            Real-Time Spend Protection & Quality Shield
-          </h2>
-          <p className="muted" style={{ maxWidth: "42rem", margin: "0 0 1rem" }}>
-            Automated cap enforcement prevents overspending with edge concurrency locks. Inspect live telemetry metrics:
-          </p>
-          <CampaignRadar />
-        </section>
-
-        {/* TRUST GRAPH SECTION */}
-        <section id="trust" className={styles.section} aria-labelledby="trust-title">
-          <h2 id="trust-title" className={styles.sectionTitle}>
-            Multi-Dimensional Trust Graph
-          </h2>
-          <p className="muted" style={{ maxWidth: "42rem", margin: "0 0 1rem" }}>
-            Trust is not a marketing promise. It is an infrastructure framework enforcing mathematical proofs, cryptographic signatures, and tenant isolation.
-          </p>
-          <TrustGraph />
-          <ul className={styles.trustGrid} style={{ marginTop: "1.5rem" }}>
-            {TRUST_ITEMS.map((item) => (
-              <li key={item} className={styles.trustItem}>
-                {item}
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        {/* PAYOUT SECTION */}
-        <section className={styles.section} aria-labelledby="payout-title">
-          <h2 id="payout-title" className={styles.sectionTitle}>
-            Get Paid With Absolute Clarity.
-          </h2>
-          <div className={styles.payoutPanel}>
-            <p className={styles.payoutHighlight}>Minimum Payout: $50 · Multi-Currency Settlement</p>
-            <p>
-              Supported settlement rails include Binance Pay (USDT/crypto) and direct wire transfers.
-              Eligibility is mathematically backed by verified ledger balances with clear separation between pending, approved, and payable funds.
-            </p>
-            <div className={styles.timeline} role="list" aria-label="Payout stages">
-              {PAYOUT_STEPS.map((label) => (
-                <div key={label} className={styles.timelineItem} role="listitem">
-                  <span className={styles.timelineDot} aria-hidden />
-                  <span>{label}</span>
-                </div>
+            <div className={styles.categoriesGrid12}>
+              {CATEGORIES.map((cat) => (
+                <Link
+                  key={cat.id}
+                  to={`/offers?vertical=${encodeURIComponent(cat.name)}`}
+                  className={styles.categoryTile}
+                >
+                  <div
+                    className={styles.catIconBox}
+                    style={{ background: cat.bg, boxShadow: `0 0 16px ${cat.shadow}` }}
+                  >
+                    <span>{cat.icon}</span>
+                  </div>
+                  <span className={styles.catName}>{cat.name}</span>
+                </Link>
               ))}
             </div>
-            <p className={styles.disclaimer}>
-              Payout availability is governed by double-entry ledger accounts, verification status, and transparent hold schedules.
-            </p>
           </div>
         </section>
 
-        {/* FAQ SECTION */}
-        <section id="faq" className={styles.section} aria-labelledby="faq-title">
-          <h2 id="faq-title" className={styles.sectionTitle}>
-            Frequently Asked Questions
-          </h2>
-          <div className={styles.faqGrid}>
-            {FAQS.map((faq, i) => (
-              <div key={i} className={styles.faqCard}>
-                <h3>{faq.q}</h3>
-                <p>{faq.a}</p>
+        {/* SECTION 6 — TRUST AND TRANSPARENCY */}
+        <section id="trust" className={styles.sectionWrap} aria-labelledby="trust-title">
+          <div className={styles.trustBannerGrid}>
+            <div className={styles.globeBox}>
+              <img
+                src="/assets/trust_globe_reference.png"
+                alt="3D Holographic globe and verified audit checklist"
+                className={styles.globeImg}
+                loading="lazy"
+              />
+            </div>
+
+            <div className={styles.trustCenterText}>
+              <div className={styles.sectionPill}>Trust & Transparency</div>
+              <h2 id="trust-title" className={styles.sectionHeading}>
+                Built on Trust.<br />
+                Backed by Data.
+              </h2>
+              <p className={styles.sectionText}>
+                We combine advanced tracking, strict verification, and transparent
+                financial systems to protect your earnings and your campaigns.
+              </p>
+              <Link to="/integrity" className={styles.learnMoreBtn}>
+                Learn More →
+              </Link>
+            </div>
+
+            <div className={styles.shieldBox}>
+              <img
+                src="/assets/trust_shield_reference.png"
+                alt="Verified security shield and compliance protections"
+                className={styles.shieldImg}
+                loading="lazy"
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* SECTION 7 — PRODUCT PREVIEW CARDS ("SEE IT IN ACTION") */}
+        <section id="previews" className={styles.sectionWrap} aria-labelledby="preview-title">
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: "1rem" }}>
+            <div>
+              <div className={styles.sectionPill}>Product Preview</div>
+              <h2 id="preview-title" className={styles.sectionHeading}>
+                See It in Action
+              </h2>
+              <p className={styles.sectionText} style={{ margin: 0 }}>
+                Get a closer look at key features and real dashboards.
+              </p>
+            </div>
+            <Link to="/earnings" className={styles.exploreFullBtn} style={{ background: "var(--tvh-gradient-pub)" }}>
+              Explore All Features →
+            </Link>
+          </div>
+
+          <div className={styles.productCardsGrid}>
+            {/* Card 1: Publisher Earnings */}
+            <Link to="/earnings" className={styles.previewCard}>
+              <div>
+                <div className={styles.previewMiniHeader}>
+                  <span className="mono" style={{ fontSize: "1.2rem", fontWeight: 700, color: "var(--tvh-cyan)" }}>
+                    $248.50
+                  </span>
+                  <span className={styles.miniTag}>PAYABLE</span>
+                </div>
+                <h3 className={styles.previewCardTitle}>Publisher Earnings Center</h3>
+                <p className={styles.previewCardDesc}>
+                  Separate pending, approved and payable earnings with complete ledger transparency.
+                </p>
               </div>
-            ))}
+              <span className={styles.demoBadge}>Demo Preview</span>
+            </Link>
+
+            {/* Card 2: Campaign Health */}
+            <Link to="/offer-caps" className={styles.previewCard}>
+              <div>
+                <div className={styles.previewMiniHeader}>
+                  <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--color-success)" }}>
+                    ● 100% HEALTHY
+                  </span>
+                  <span className={styles.miniTag}>DO MUTEX</span>
+                </div>
+                <h3 className={styles.previewCardTitle}>Campaign Health</h3>
+                <p className={styles.previewCardDesc}>
+                  Monitor performance, budget and spend protection signals in real time.
+                </p>
+              </div>
+              <span className={styles.demoBadge}>Demo Preview</span>
+            </Link>
+
+            {/* Card 3: Conversion Evidence Trail */}
+            <Link to="/conversion-confidence" className={styles.previewCard}>
+              <div>
+                <div className={styles.previewMiniHeader}>
+                  <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--tvh-cyan)" }}>
+                    8-STAGE PIPELINE
+                  </span>
+                  <span className={styles.miniTag}>AUDITED</span>
+                </div>
+                <h3 className={styles.previewCardTitle}>Conversion Evidence Trail</h3>
+                <p className={styles.previewCardDesc}>
+                  See every authoritative step from initial click to wallet payout.
+                </p>
+              </div>
+              <span className={styles.demoBadge}>Demo Preview</span>
+            </Link>
+
+            {/* Card 4: Tracking Diagnostics */}
+            <Link to="/tracking-links" className={styles.previewCard}>
+              <div>
+                <div className={styles.previewMiniHeader}>
+                  <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--tvh-blue)" }}>
+                    TELEMETRY LOGS
+                  </span>
+                  <span className={styles.miniTag}>LIVE</span>
+                </div>
+                <h3 className={styles.previewCardTitle}>Tracking Diagnostics</h3>
+                <p className={styles.previewCardDesc}>
+                  Fix configuration issues and improve postback accuracy with deep SubID inspection.
+                </p>
+              </div>
+              <span className={styles.demoBadge}>Demo Preview</span>
+            </Link>
           </div>
         </section>
 
-        {/* FINAL CTA */}
-        <section className={styles.finalCta} aria-labelledby="cta-title">
-          <h2 id="cta-title">Start Building Transparent Affiliate Growth.</h2>
-          <p>
-            Join TrafficVaultHub to discover offers, track conversions with confidence,
-            and manage campaigns with real financial and operational visibility.
-          </p>
-          <div className={styles.heroCtas}>
-            <Link to="/login" className={styles.btnPrimary}>
-              Start as Publisher
-            </Link>
-            <Link to="/campaign-studio" className={styles.btnSecondary}>
-              Start as Advertiser
-            </Link>
+        {/* SECTION 8 — FINAL CONVERSION BANNER */}
+        <section className={styles.finalBannerWrap} aria-labelledby="final-title">
+          <div className={styles.finalBannerCard}>
+            <img
+              src="/assets/final_cta_reference.png"
+              alt="Build Better Campaigns. Make Every Conversion Count."
+              className={styles.finalBannerImg}
+              loading="lazy"
+            />
+            <div className={styles.finalBannerOverlay}>
+              <h2 id="final-title" className={styles.finalHeadline}>
+                Build Better Campaigns.<br />
+                Make Every <span className={styles.cyanText}>Conversion Count.</span>
+              </h2>
+              <p className={styles.finalSub}>
+                Discover eligible offers, improve tracking visibility and manage campaigns with greater confidence.
+              </p>
+              <div className={styles.finalCtas}>
+                <Link to="/login" className={styles.ctaPublisher}>
+                  Join as Publisher →
+                </Link>
+                <Link to="/campaign-studio" className={styles.ctaAdvertiser}>
+                  Join as Advertiser →
+                </Link>
+              </div>
+            </div>
           </div>
-          <p className={styles.trustLine}>
-            Minimum payout $50 · Binance Pay supported · Transparent tracking · Double-entry ledger
-          </p>
         </section>
       </main>
 
+      {/* SECTION 9 — COMPACT PREMIUM FOOTER */}
       <footer className={styles.footer}>
-        <div className={styles.footerGrid}>
-          <div>
-            <div className={styles.brand}>
-              <span className={styles.logoMark} aria-hidden />
-              <span className={styles.logoText}>TrafficVaultHub</span>
+        <div className={styles.footerInner}>
+          <div className={styles.footerTop}>
+            <Link to="/" className={styles.brand}>
+              <div className={styles.logoIcon}>
+                <span className={styles.logoV}>V</span>
+              </div>
+              <div className={styles.brandCol}>
+                <span className={styles.brandName}>TrafficVaultHub</span>
+                <span className={styles.brandSub}>Universal CPA Network</span>
+              </div>
+            </Link>
+
+            <nav className={styles.footerNav} aria-label="Footer Navigation">
+              <Link to="/offers" className={styles.footerLink}>Offers</Link>
+              <a href="#problems" className={styles.footerLink}>Publishers</a>
+              <a href="#problems" className={styles.footerLink}>Advertisers</a>
+              <a href="#trust" className={styles.footerLink}>About</a>
+              <Link to="/health" className={styles.footerLink}>Help Center</Link>
+              <Link to="/disputes" className={styles.footerLink}>Contact</Link>
+            </nav>
+
+            <div className={styles.footerLegal}>
+              <Link to="/privacy" className={styles.footerLink}>Privacy Policy</Link>
+              <Link to="/terms" className={styles.footerLink}>Terms of Service</Link>
+              <Link to="/compliance" className={styles.footerLink}>Compliance Policy</Link>
             </div>
-            <p className={styles.footerTag}>
-              Every Click Accounted For. Every Decision Explained. Every Valid Payout Tracked.
-            </p>
           </div>
-          <div>
-            <h3>Marketplace & Tracking</h3>
-            <ul>
-              <li>
-                <Link to="/offers">Offer Marketplace</Link>
-              </li>
-              <li>
-                <Link to="/tracking-links">Tracking Links Generator</Link>
-              </li>
-              <li>
-                <Link to="/smartlinks">Smartlinks Traffic Router</Link>
-              </li>
-              <li>
-                <Link to="/campaign-studio">Campaign Launch Studio</Link>
-              </li>
-            </ul>
-          </div>
-          <div>
-            <h3>Trust & Finance</h3>
-            <ul>
-              <li>
-                <Link to="/earnings">Publisher Earnings</Link>
-              </li>
-              <li>
-                <Link to="/conversion-confidence">Confidence Monitor</Link>
-              </li>
-              <li>
-                <Link to="/disputes">Disputes & Appeals</Link>
-              </li>
-              <li>
-                <Link to="/integrity">Fraud Shield & Integrity</Link>
-              </li>
-              <li>
-                <Link to="/payouts">Payout Requests</Link>
-              </li>
-            </ul>
-          </div>
-          <div>
-            <h3>Platform & Legal</h3>
-            <ul>
-              <li>
-                <Link to="/health">System Health</Link>
-              </li>
-              <li>
-                <Link to="/compliance">Compliance Queue</Link>
-              </li>
-              <li>
-                <Link to="/terms">Terms of Service</Link>
-              </li>
-              <li>
-                <Link to="/privacy">Privacy Policy</Link>
-              </li>
-            </ul>
+
+          <div className={styles.footerBottom}>
+            <div>
+              © 2026 TrafficVaultHub. All rights reserved.
+            </div>
+            <div className={styles.socialRow}>
+              <a href="https://discord.gg" target="_blank" rel="noreferrer" className={styles.socialLink} aria-label="Discord">Discord</a>
+              <a href="https://x.com" target="_blank" rel="noreferrer" className={styles.socialLink} aria-label="X Twitter">X</a>
+              <a href="https://youtube.com" target="_blank" rel="noreferrer" className={styles.socialLink} aria-label="YouTube">YouTube</a>
+              <a href="https://linkedin.com" target="_blank" rel="noreferrer" className={styles.socialLink} aria-label="LinkedIn">LinkedIn</a>
+            </div>
           </div>
         </div>
-        <p className={styles.compliance}>
-          Adult Dating and other restricted categories are available only where
-          legally eligible and subject to manual review, jurisdictional
-          restrictions, age requirements, and platform approval.
-        </p>
-        <p className={styles.copy}>
-          © {new Date().getFullYear()} TrafficVaultHub. All rights reserved.
-        </p>
       </footer>
     </div>
   );

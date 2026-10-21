@@ -90,8 +90,8 @@ All environment variables and secret names are declared and accessed via `c.env`
 | 2026-10-21 (`3a30e56`) | Dependency hygiene | Removed stale lockfile to resolve conflicts |
 | 2026-10-21 (`b2869f8`) | Master audit & test suite | Created `password.test.ts`, `finance.test.ts`, `tracking.test.ts`, enhanced `CampaignStudioPage`, updated `Shell` with active session badge & sign-out |
 | 2026-10-21 (`623afe8`) | Tracking & Smartlinks | Implemented `TrackingLinksPage`, `SmartlinksPage`, `smartlinks.test.ts`, added routes to `App.tsx` and `Shell.tsx` |
-| 2026-10-21 (`81923dd`) | Disputes & Fraud Shield | Implemented `DisputesPage`, `IntegrityPage`, `fraud.test.ts` (expanded suite to 25 passing tests), updated navigation |
-| 2026-10-21 (`current`) | CI & Workflow audit | Updated `.github/workflows/webpack.yml` to CI workflow running typecheck, test suite, and build |
+| 2026-10-21 (`56226c6`) | CI & Workflow audit | Updated `.github/workflows/webpack.yml` to CI workflow running typecheck, test suite, and build |
+| 2026-10-21 (`current`) | Reference-Match Landing Page | Complete 9-section 1:1 match of reference design: 3D Vault hero, value cards, 5-step process, 12 categories, trust globe, product previews, and cosmic CTA |
 
 ---
 
