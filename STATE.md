@@ -299,3 +299,12 @@ See `docs/PHASE_A_AUDIT.md`.
 - Idempotent; platform finance/ops or advertiser owner/admin/billing roles
 - Explicit note: not payment-provider proof
 - Deployed version a59526e1
+
+---
+
+## 16. Offer lifecycle (2026-10-21)
+
+- `POST /api/v1/offers` — DRAFT + offer_versions v1
+- Transitions: submit-review, approve (platform), activate, pause, resume, reject→DRAFT
+- Records offer_status_transitions; LIVE requires destination_url + conversion_event
+- Deployed version 093f0952
