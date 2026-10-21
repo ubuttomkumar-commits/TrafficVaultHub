@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
-import { DataFlowNetwork } from "../components/DataFlowNetwork";
-import { IllustrativeCharts } from "../components/IllustrativeCharts";
+import { HeroVaultScene } from "../components/HeroVaultScene";
 import styles from "./LandingPage.module.css";
 
 const PUBLISHER_PROBLEMS = [
@@ -177,52 +176,8 @@ export function LandingPage() {
               </p>
             </div>
 
-            <div className={styles.heroVisual} aria-label="Illustrative dashboard mockup">
-              <div className={styles.networkLayer} aria-hidden>
-                <DataFlowNetwork />
-              </div>
-              <div className={styles.mockFrame}>
-                <div className={styles.mockBar}>
-                  <span />
-                  <span />
-                  <span />
-                  <em>Illustrative interface — not live production data</em>
-                </div>
-                <div className={styles.mockBody}>
-                  <div className={styles.mockCard}>
-                    <span className={styles.mockLabel}>Clicks</span>
-                    <span className={styles.mockValue}>Tracked</span>
-                  </div>
-                  <div className={styles.mockCard}>
-                    <span className={styles.mockLabel}>Postbacks</span>
-                    <span className={styles.mockValue}>Authenticated</span>
-                  </div>
-                  <div className={styles.mockCard}>
-                    <span className={styles.mockLabel}>Conversions</span>
-                    <span className={styles.mockValue}>Pending / Approved</span>
-                  </div>
-                  <div className={styles.mockCard}>
-                    <span className={styles.mockLabel}>Payouts</span>
-                    <span className={styles.mockValue}>Ledger status</span>
-                  </div>
-                  <div className={`${styles.mockCard} ${styles.mockWide}`}>
-                    <span className={styles.mockLabel}>Campaign health</span>
-                    <span className={styles.mockValue}>
-                      Caps · Budgets · Tracking signals
-                    </span>
-                  </div>
-                </div>
-                <IllustrativeCharts />
-                <div className={styles.flowNodes} aria-hidden>
-                  <span>Publisher</span>
-                  <span className={styles.flowLine} />
-                  <span>Tracking</span>
-                  <span className={styles.flowLine} />
-                  <span>Advertiser</span>
-                  <span className={styles.flowLine} />
-                  <span>Payout</span>
-                </div>
-              </div>
+            <div className={styles.heroVisual}>
+              <HeroVaultScene />
             </div>
           </div>
         </section>

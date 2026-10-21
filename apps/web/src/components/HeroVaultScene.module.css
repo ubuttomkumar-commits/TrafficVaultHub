@@ -1,0 +1,3 @@
+.wrap{position:relative;width:100%;height:100%;min-height:340px;border-radius:1rem;overflow:hidden;background:linear-gradient(165deg,#080c16,#0a101e 45%,#060a12);border:1px solid rgba(148,163,184,.14)}
+.canvas{display:block;width:100%;height:100%;min-height:340px}
+.caption{position:absolute;bottom:.5rem;left:0;right:0;text-align:center;font-size:.62rem;color:rgba(148,163,184,.55)}

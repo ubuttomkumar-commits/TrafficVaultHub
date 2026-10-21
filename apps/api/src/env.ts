@@ -11,7 +11,7 @@ export type Env = {
   KV: KVNamespace;
 
   // R2 (private evidence)
-  R2: R2Bucket;
+  R2?: R2Bucket;
 
   // Queues
   CONVERSION_QUEUE: Queue;

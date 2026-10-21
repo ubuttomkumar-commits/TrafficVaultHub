@@ -7,6 +7,7 @@ import { OffersPage } from "./pages/OffersPage";
 import { LoginPage } from "./pages/LoginPage";
 import { EarningsPage } from "./pages/EarningsPage";
 import { OfferCapsPage } from "./pages/OfferCapsPage";
+import { CampaignStudioPage } from "./pages/CampaignStudioPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 
 function AppRoutes() {
@@ -28,6 +29,7 @@ function AppRoutes() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/earnings" element={<EarningsPage />} />
         <Route path="/offer-caps" element={<OfferCapsPage />} />
+        <Route path="/campaign-studio" element={<CampaignStudioPage />} />
         <Route path="/categories" element={<CategoriesPage />} />
         <Route path="/health" element={<HealthPage />} />
         <Route path="*" element={<NotFoundPage />} />
