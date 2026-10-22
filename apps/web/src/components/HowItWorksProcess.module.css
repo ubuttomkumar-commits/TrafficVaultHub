@@ -1,0 +1,131 @@
+.container {
+  background: rgba(8, 14, 28, 0.9);
+  border: 1px solid rgba(34, 211, 238, 0.25);
+  border-radius: 1rem;
+  padding: 2rem 1.5rem;
+  box-shadow: 0 15px 40px -10px rgba(0, 0, 0, 0.8), 0 0 30px rgba(34, 211, 238, 0.1);
+  backdrop-filter: blur(12px);
+}
+
+.stepsTrack {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+}
+
+@media (max-width: 900px) {
+  .stepsTrack {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+
+.stepNode {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.75rem 0.5rem;
+  border-radius: 0.75rem;
+  transition: all 0.2s ease;
+  flex: 1;
+  min-width: 140px;
+}
+
+.stepNode:hover,
+.stepNodeActive {
+  background: rgba(34, 211, 238, 0.08);
+}
+
+.stepNodeActive .iconPlate {
+  border-color: var(--color-accent-cyan);
+  box-shadow: 0 0 25px rgba(34, 211, 238, 0.45);
+  transform: translateY(-2px);
+}
+
+.iconPlate {
+  width: 4rem;
+  height: 4rem;
+  border-radius: 1.15rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  margin-bottom: 0.85rem;
+  transition: all 0.25s ease;
+  position: relative;
+}
+
+.arrowConnector {
+  color: rgba(34, 211, 238, 0.6);
+  font-size: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  animation: pulseArrow 2s infinite ease-in-out;
+}
+
+@media (max-width: 900px) {
+  .arrowConnector {
+    transform: rotate(90deg);
+  }
+}
+
+@keyframes pulseArrow {
+  0%, 100% { opacity: 0.4; transform: translateX(0); }
+  50% { opacity: 1; transform: translateX(4px); }
+}
+
+.stepTitle {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 0.35rem;
+  letter-spacing: -0.01em;
+}
+
+.stepDesc {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  line-height: 1.35;
+  margin: 0;
+  max-width: 12rem;
+}
+
+.logPreview {
+  margin-top: 1.75rem;
+  padding: 1rem 1.25rem;
+  border-radius: 0.65rem;
+  background: rgba(4, 7, 15, 0.95);
+  border: 1px solid rgba(34, 211, 238, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.logHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  color: var(--color-accent-cyan);
+}
+
+.logBody {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  color: #cbd5e1;
+  margin: 0;
+  white-space: pre-wrap;
+  line-height: 1.5;
+}

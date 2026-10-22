@@ -2,21 +2,21 @@
   position: relative;
   width: 100%;
   height: 100%;
-  min-height: 440px;
-  border-radius: var(--radius-lg);
+  min-height: 480px;
+  border-radius: 1.25rem;
   overflow: hidden;
-  background: radial-gradient(circle at 60% 40%, rgba(34, 211, 238, 0.06), transparent 55%),
-              linear-gradient(165deg, #07090e 0%, #0a0e18 45%, #05070c 100%);
-  border: 1px solid rgba(148, 163, 184, 0.15);
-  box-shadow: 0 20px 45px -15px rgba(0, 0, 0, 0.8),
-              0 0 40px -10px rgba(34, 211, 238, 0.12);
+  background: radial-gradient(circle at 50% 50%, rgba(34, 211, 238, 0.08) 0%, transparent 65%),
+              linear-gradient(165deg, #050914 0%, #081122 45%, #03060f 100%);
+  border: 1px solid rgba(34, 211, 238, 0.28);
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.9),
+              0 0 45px rgba(34, 211, 238, 0.15);
 }
 
 .canvas {
   display: block;
   width: 100%;
   height: 100%;
-  min-height: 440px;
+  min-height: 480px;
 }
 
 .hudOverlay {
@@ -37,64 +37,172 @@
 }
 
 .hudCard {
-  background: rgba(10, 14, 24, 0.75);
+  background: rgba(8, 14, 28, 0.85);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(34, 211, 238, 0.25);
-  border-radius: var(--radius-sm);
-  padding: 0.6rem 0.85rem;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  border-radius: 0.65rem;
+  padding: 0.65rem 0.85rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 15px rgba(34, 211, 238, 0.1);
+  pointer-events: auto;
 }
 
-.hudLabel {
-  font-size: 0.68rem;
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 0.2rem;
-}
-
-.hudValue {
-  font-family: var(--font-mono);
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--color-text-primary);
+.cardHeader {
   display: flex;
   align-items: center;
   gap: 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 0.35rem;
 }
 
-.hudIndicator {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
+.healthBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: #34d399;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-weight: 600;
+}
+
+.healthDot {
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
-  background: var(--color-accent-cyan);
-  box-shadow: 0 0 8px var(--color-accent-cyan);
+  background: #34d399;
+  box-shadow: 0 0 6px #34d399;
 }
 
-.hudBottom {
+.earningsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.68rem;
+  color: #94a3b8;
+}
+
+.earningItem {
   display: flex;
   justify-content: space-between;
-  align-items: flex-end;
-  gap: 0.75rem;
-}
-
-.hudTicker {
-  background: rgba(10, 14, 24, 0.75);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(148, 163, 184, 0.15);
-  border-radius: var(--radius-sm);
-  padding: 0.45rem 0.75rem;
-  font-size: 0.75rem;
-  font-family: var(--font-mono);
-  color: var(--color-accent-cyan);
-  display: flex;
-  align-items: center;
   gap: 0.5rem;
 }
 
-.caption {
-  font-size: 0.65rem;
-  color: rgba(148, 163, 184, 0.45);
-  margin: 0;
+.dotCyan { color: #22d3ee; }
+.dotAmber { color: #f59e0b; }
+.dotGreen { color: #10b981; }
+
+.hudMiddle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 0.5rem;
+}
+
+.offersBadge {
+  background: rgba(8, 14, 28, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(34, 211, 238, 0.25);
+  border-radius: 0.55rem;
+  padding: 0.5rem 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  pointer-events: auto;
+}
+
+.iconRow {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.miniIcon {
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 0.3rem;
+  background: rgba(34, 211, 238, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+}
+
+.resultsBadge {
+  background: rgba(8, 14, 28, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(34, 211, 238, 0.25);
+  border-radius: 0.55rem;
+  padding: 0.5rem 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  pointer-events: auto;
+}
+
+.shieldIcon {
+  color: var(--color-accent-cyan);
+  font-size: 1.1rem;
+}
+
+/* Bottom Journey Track: Click -> Track -> Validate -> Convert */
+.hudBottom {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  pointer-events: auto;
+}
+
+.journeyTrack {
+  background: rgba(6, 11, 22, 0.9);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(34, 211, 238, 0.35);
+  border-radius: 0.85rem;
+  padding: 0.65rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 20px rgba(34, 211, 238, 0.15);
+}
+
+.journeyStep {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: transparent;
+  border: none;
+  color: #cbd5e1;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.4rem;
+  transition: all 0.2s ease;
+}
+
+.journeyStep:hover,
+.journeyStepActive {
+  color: #ffffff;
+  background: rgba(34, 211, 238, 0.12);
+}
+
+.stepCircle {
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  background: rgba(34, 211, 238, 0.15);
+  border: 1px solid var(--color-accent-cyan);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  color: var(--color-accent-cyan);
+  box-shadow: 0 0 10px rgba(34, 211, 238, 0.35);
+}
+
+.stepArrow {
+  color: rgba(34, 211, 238, 0.5);
+  font-size: 0.85rem;
 }

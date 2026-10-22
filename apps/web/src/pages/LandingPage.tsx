@@ -1,24 +1,15 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { HeroVaultScene } from "../components/HeroVaultScene";
+import { HowItWorksProcess } from "../components/HowItWorksProcess";
+import { OfferCategoriesGrid } from "../components/OfferCategoriesGrid";
+import { TrustSection } from "../components/TrustSection";
+import { FAQAccordion } from "../components/FAQAccordion";
+import { FinalCTASection } from "../components/FinalCTASection";
 import styles from "./LandingPage.module.css";
 
-const CATEGORIES = [
-  { id: "dating", name: "Dating & Relationships", icon: "❤️", bg: "linear-gradient(135deg, #ec4899, #be185d)", shadow: "rgba(236, 72, 153, 0.35)" },
-  { id: "apps", name: "Mobile Apps & Software", icon: "📱", bg: "linear-gradient(135deg, #0284c7, #0369a1)", shadow: "rgba(2, 132, 199, 0.35)" },
-  { id: "gaming", name: "Gaming & Entertainment", icon: "🎮", bg: "linear-gradient(135deg, #7c3aed, #5b21b6)", shadow: "rgba(124, 58, 237, 0.35)" },
-  { id: "ecommerce", name: "E-commerce & Retail", icon: "🛒", bg: "linear-gradient(135deg, #059669, #047857)", shadow: "rgba(5, 150, 105, 0.35)" },
-  { id: "finance", name: "Finance & Business", icon: "💰", bg: "linear-gradient(135deg, #d97706, #b45309)", shadow: "rgba(217, 119, 6, 0.35)" },
-  { id: "education", name: "Education & Employment", icon: "🎓", bg: "linear-gradient(135deg, #2563eb, #1d4ed8)", shadow: "rgba(37, 99, 235, 0.35)" },
-  { id: "travel", name: "Travel & Hospitality", icon: "✈️", bg: "linear-gradient(135deg, #db2777, #9d174d)", shadow: "rgba(219, 39, 119, 0.35)" },
-  { id: "health", name: "Health & Wellness", icon: "🩺", bg: "linear-gradient(135deg, #0d9488, #0f766e)", shadow: "rgba(13, 148, 136, 0.35)" },
-  { id: "home", name: "Home & Local Services", icon: "🏠", bg: "linear-gradient(135deg, #6366f1, #4338ca)", shadow: "rgba(99, 102, 241, 0.35)" },
-  { id: "media", name: "Media & Content", icon: "▶️", bg: "linear-gradient(135deg, #8b5cf6, #6d28d9)", shadow: "rgba(139, 92, 246, 0.35)" },
-  { id: "surveys", name: "Surveys & Rewards", icon: "🎁", bg: "linear-gradient(135deg, #ea580c, #c2410c)", shadow: "rgba(234, 88, 12, 0.35)" },
-  { id: "other", name: "Other", icon: "•••", bg: "linear-gradient(135deg, #1e293b, #0f172a)", shadow: "rgba(30, 41, 59, 0.35)" },
-];
-
 export function LandingPage() {
-  const [themeDark, setThemeDark] = useState(true);
+  const [themeMode, setThemeMode] = useState<"dark" | "cyber">("cyber");
 
   return (
     <div className={styles.page}>
@@ -52,9 +43,9 @@ export function LandingPage() {
             <button
               type="button"
               className={styles.themeBtn}
-              onClick={() => setThemeDark(!themeDark)}
-              aria-label="Toggle theme display"
-              title="Toggle theme"
+              onClick={() => setThemeMode(themeMode === "cyber" ? "dark" : "cyber")}
+              aria-label="Toggle visual theme mode"
+              title="Toggle theme mode"
             >
               ☀️
             </button>
@@ -115,15 +106,8 @@ export function LandingPage() {
               </div>
             </div>
 
-            {/* 3D Digital Vault Visual (Reference Reproduction) */}
-            <div className={styles.vaultArtworkContainer}>
-              <img
-                src="/assets/hero_vault_reference.png"
-                alt="TrafficVaultHub 3D Digital Vault with real-time conversion telemetry and floating analytics panels"
-                className={styles.vaultArtworkImg}
-                loading="eager"
-              />
-            </div>
+            {/* Real Interactive 3D Digital Vault (Three.js WebGL Engine) */}
+            <HeroVaultScene />
           </div>
         </section>
 
@@ -178,13 +162,6 @@ export function LandingPage() {
                 <Link to="/login" className={styles.cardBtnPub}>
                   Grow as a Publisher →
                 </Link>
-                <img
-                  src="/assets/publisher_avatar_3d.png"
-                  alt=""
-                  aria-hidden="true"
-                  className={styles.cardCharacterImg}
-                  loading="lazy"
-                />
               </article>
 
               {/* For Advertisers Card */}
@@ -223,19 +200,12 @@ export function LandingPage() {
                 <Link to="/campaign-studio" className={styles.cardBtnAdv}>
                   Launch a Campaign →
                 </Link>
-                <img
-                  src="/assets/advertiser_avatar_3d.png"
-                  alt=""
-                  aria-hidden="true"
-                  className={styles.cardCharacterImg}
-                  loading="lazy"
-                />
               </article>
             </div>
           </div>
         </section>
 
-        {/* SECTION 4 — HOW IT WORKS */}
+        {/* SECTION 4 — HOW IT WORKS (REAL INTERACTIVE COMPONENT) */}
         <section id="how" className={styles.sectionWrap} aria-labelledby="how-title">
           <div className={styles.splitSection}>
             <div>
@@ -246,23 +216,16 @@ export function LandingPage() {
               <p className={styles.sectionText}>
                 From discovery to payout — every step is tracked, verified and recorded.
               </p>
-              <Link to="/conversion-confidence" className={styles.exploreFullBtn}>
+              <Link to="/conversion-confidence" className={styles.cardBtnPub}>
                 Explore Full Flow →
               </Link>
             </div>
 
-            <div className={styles.howItWorksBanner}>
-              <img
-                src="/assets/how_it_works_reference.png"
-                alt="How it works 5 steps: 1. Discover Offer, 2. Track Click, 3. Validate Event, 4. Review Conversion, 5. Record Earnings"
-                style={{ width: "100%", height: "auto", display: "block", borderRadius: "0.5rem" }}
-                loading="lazy"
-              />
-            </div>
+            <HowItWorksProcess />
           </div>
         </section>
 
-        {/* SECTION 5 — OFFER CATEGORIES */}
+        {/* SECTION 5 — OFFER CATEGORIES (12 REAL LUMINOUS TILES) */}
         <section id="categories" className={styles.sectionWrap} aria-labelledby="cat-title">
           <div className={styles.splitSection}>
             <div>
@@ -273,67 +236,18 @@ export function LandingPage() {
               <p className={styles.sectionText}>
                 Find your perfect vertical. Millions of opportunities across 12+ categories.
               </p>
-              <Link to="/offers" className={styles.exploreFullBtn} style={{ background: "var(--tvh-gradient-btn)" }}>
+              <Link to="/offers" className={styles.cardBtnAdv}>
                 Browse All Offers →
               </Link>
             </div>
 
-            <div className={styles.categoriesGrid12}>
-              {CATEGORIES.map((cat) => (
-                <Link
-                  key={cat.id}
-                  to={`/offers?vertical=${encodeURIComponent(cat.name)}`}
-                  className={styles.categoryTile}
-                >
-                  <div
-                    className={styles.catIconBox}
-                    style={{ background: cat.bg, boxShadow: `0 0 16px ${cat.shadow}` }}
-                  >
-                    <span>{cat.icon}</span>
-                  </div>
-                  <span className={styles.catName}>{cat.name}</span>
-                </Link>
-              ))}
-            </div>
+            <OfferCategoriesGrid />
           </div>
         </section>
 
-        {/* SECTION 6 — TRUST AND TRANSPARENCY */}
+        {/* SECTION 6 — TRUST AND TRANSPARENCY (REAL 3D GLOBE & SHIELD) */}
         <section id="trust" className={styles.sectionWrap} aria-labelledby="trust-title">
-          <div className={styles.trustBannerGrid}>
-            <div className={styles.globeBox}>
-              <img
-                src="/assets/trust_globe_reference.png"
-                alt="3D Holographic globe and verified audit checklist"
-                className={styles.globeImg}
-                loading="lazy"
-              />
-            </div>
-
-            <div className={styles.trustCenterText}>
-              <div className={styles.sectionPill}>Trust & Transparency</div>
-              <h2 id="trust-title" className={styles.sectionHeading}>
-                Built on Trust.<br />
-                Backed by Data.
-              </h2>
-              <p className={styles.sectionText}>
-                We combine advanced tracking, strict verification, and transparent
-                financial systems to protect your earnings and your campaigns.
-              </p>
-              <Link to="/integrity" className={styles.learnMoreBtn}>
-                Learn More →
-              </Link>
-            </div>
-
-            <div className={styles.shieldBox}>
-              <img
-                src="/assets/trust_shield_reference.png"
-                alt="Verified security shield and compliance protections"
-                className={styles.shieldImg}
-                loading="lazy"
-              />
-            </div>
-          </div>
+          <TrustSection />
         </section>
 
         {/* SECTION 7 — PRODUCT PREVIEW CARDS ("SEE IT IN ACTION") */}
@@ -348,13 +262,13 @@ export function LandingPage() {
                 Get a closer look at key features and real dashboards.
               </p>
             </div>
-            <Link to="/earnings" className={styles.exploreFullBtn} style={{ background: "var(--tvh-gradient-pub)" }}>
+            <Link to="/earnings" className={styles.cardBtnPub}>
               Explore All Features →
             </Link>
           </div>
 
           <div className={styles.productCardsGrid}>
-            {/* Card 1: Publisher Earnings */}
+            {/* Card 1: Publisher Earnings Center */}
             <Link to="/earnings" className={styles.previewCard}>
               <div>
                 <div className={styles.previewMiniHeader}>
@@ -367,6 +281,9 @@ export function LandingPage() {
                 <p className={styles.previewCardDesc}>
                   Separate pending, approved and payable earnings with complete ledger transparency.
                 </p>
+                <div className={styles.previewMeter}>
+                  <div className={styles.previewMeterFill} style={{ width: "78%" }} />
+                </div>
               </div>
               <span className={styles.demoBadge}>Demo Preview</span>
             </Link>
@@ -384,6 +301,9 @@ export function LandingPage() {
                 <p className={styles.previewCardDesc}>
                   Monitor performance, budget and spend protection signals in real time.
                 </p>
+                <div className={styles.previewMeter}>
+                  <div className={styles.previewMeterFill} style={{ width: "100%", background: "var(--color-success)" }} />
+                </div>
               </div>
               <span className={styles.demoBadge}>Demo Preview</span>
             </Link>
@@ -401,6 +321,9 @@ export function LandingPage() {
                 <p className={styles.previewCardDesc}>
                   See every authoritative step from initial click to wallet payout.
                 </p>
+                <div className={styles.previewMeter}>
+                  <div className={styles.previewMeterFill} style={{ width: "92%" }} />
+                </div>
               </div>
               <span className={styles.demoBadge}>Demo Preview</span>
             </Link>
@@ -418,43 +341,34 @@ export function LandingPage() {
                 <p className={styles.previewCardDesc}>
                   Fix configuration issues and improve postback accuracy with deep SubID inspection.
                 </p>
+                <div className={styles.previewMeter}>
+                  <div className={styles.previewMeterFill} style={{ width: "85%" }} />
+                </div>
               </div>
               <span className={styles.demoBadge}>Demo Preview</span>
             </Link>
           </div>
         </section>
 
-        {/* SECTION 8 — FINAL CONVERSION BANNER */}
-        <section className={styles.finalBannerWrap} aria-labelledby="final-title">
-          <div className={styles.finalBannerCard}>
-            <img
-              src="/assets/final_cta_reference.png"
-              alt="Build Better Campaigns. Make Every Conversion Count."
-              className={styles.finalBannerImg}
-              loading="lazy"
-            />
-            <div className={styles.finalBannerOverlay}>
-              <h2 id="final-title" className={styles.finalHeadline}>
-                Build Better Campaigns.<br />
-                Make Every <span className={styles.cyanText}>Conversion Count.</span>
-              </h2>
-              <p className={styles.finalSub}>
-                Discover eligible offers, improve tracking visibility and manage campaigns with greater confidence.
-              </p>
-              <div className={styles.finalCtas}>
-                <Link to="/login" className={styles.ctaPublisher}>
-                  Join as Publisher →
-                </Link>
-                <Link to="/campaign-studio" className={styles.ctaAdvertiser}>
-                  Join as Advertiser →
-                </Link>
-              </div>
-            </div>
-          </div>
+        {/* SECTION 8 — FAQ ACCORDION */}
+        <section id="faq" className={styles.sectionWrap} aria-labelledby="faq-title">
+          <div className={styles.sectionPill}>Support & Policies</div>
+          <h2 id="faq-title" className={styles.sectionHeading}>
+            Frequently Asked Questions
+          </h2>
+          <p className={styles.sectionText}>
+            Transparent answers on payments, postbacks, fraud prevention, and network operations.
+          </p>
+          <FAQAccordion />
         </section>
+
+        {/* SECTION 9 — FINAL CONVERSION BANNER (REAL 3D CYBERNETIC LAPTOP) */}
+        <div className={styles.sectionWrap}>
+          <FinalCTASection />
+        </div>
       </main>
 
-      {/* SECTION 9 — COMPACT PREMIUM FOOTER */}
+      {/* SECTION 10 — COMPACT PREMIUM FOOTER */}
       <footer className={styles.footer}>
         <div className={styles.footerInner}>
           <div className={styles.footerTop}>
