@@ -5,6 +5,7 @@ import { HealthPage } from "./pages/HealthPage";
 import { CategoriesPage } from "./pages/CategoriesPage";
 import { OffersPage } from "./pages/OffersPage";
 import { LoginPage } from "./pages/LoginPage";
+import { RegisterPage } from "./pages/RegisterPage";
 import { EarningsPage } from "./pages/EarningsPage";
 import { OfferCapsPage } from "./pages/OfferCapsPage";
 import { CampaignStudioPage } from "./pages/CampaignStudioPage";
@@ -17,10 +18,10 @@ import { TrackingLinksPage } from "./pages/TrackingLinksPage";
 import { SmartlinksPage } from "./pages/SmartlinksPage";
 import { DisputesPage } from "./pages/DisputesPage";
 import { IntegrityPage } from "./pages/IntegrityPage";
-import { RegisterPage } from "./pages/RegisterPage";
 import { AdminDashboardPage } from "./pages/AdminDashboardPage";
 import { VerificationStatusPage } from "./pages/VerificationStatusPage";
 import { AdminApplicationsPage } from "./pages/AdminApplicationsPage";
+import { AdminLoginPage } from "./pages/AdminLoginPage";
 
 function AppRoutes() {
   const location = useLocation();
@@ -47,6 +48,7 @@ function AppRoutes() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/verification" element={<VerificationStatusPage />} />
         <Route path="/admin" element={<AdminDashboardPage />} />
+        <Route path="/admin/login" element={<AdminLoginPage />} />
         <Route path="/admin/applications" element={<AdminApplicationsPage />} />
         <Route path="/earnings" element={<EarningsPage />} />
         <Route path="/conversion-confidence" element={<ConversionConfidencePage />} />

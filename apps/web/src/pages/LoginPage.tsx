@@ -121,10 +121,18 @@ export function LoginPage() {
       </div>
 
       <div className={styles.footerLinks}>
-        New partner?{" "}
-        <Link to="/signup" style={{ color: "var(--color-accent-cyan)", textDecoration: "underline" }}>
-          Apply for onboarding
-        </Link>
+        <div>
+          Platform Operator?{" "}
+          <Link to="/admin/login" style={{ color: "var(--color-accent-cyan)", fontWeight: 600 }}>
+            Go to Admin Portal →
+          </Link>
+        </div>
+        <div style={{ marginTop: "0.5rem" }}>
+          New partner?{" "}
+          <Link to="/signup" style={{ color: "var(--color-text-secondary)", textDecoration: "underline" }}>
+            Apply for onboarding
+          </Link>
+        </div>
       </div>
     </div>
   );

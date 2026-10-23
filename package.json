@@ -20,7 +20,8 @@
     "db:migrate:local": "npm run db:migrate:local -w @trafficvaulthub/api",
     "db:migrate:remote": "npm run db:migrate:remote -w @trafficvaulthub/api",
     "deploy": "npm run deploy -w @trafficvaulthub/api",
-    "cf-typegen": "npm run cf-typegen -w @trafficvaulthub/api"
+    "cf-typegen": "npm run cf-typegen -w @trafficvaulthub/api",
+    "admin:bootstrap": "bash scripts/bootstrap-admin.sh"
   },
   "engines": {
     "node": ">=20"

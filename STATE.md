@@ -112,3 +112,67 @@ All environment variables and secret names are declared and accessed via `c.env`
 - **Local Dev Server**: Port 3000 (running Vite dev server with synchronized mock APIs)
 - **Shared App URL**: `https://ais-pre-fe7qppb5jpommhkeeln5g7-801024355645.asia-southeast1.run.app`
 
+---
+
+## 5. Platform Operator Account & Bootstrap Protocol
+
+### 5.1 Admin Identity Target
+- **Target Operator Email:** `ubuttomkumar@gmail.com`
+- **Assigned Role:** `super_admin` (`platform_operator`)
+- **Assigned Organization:** `PLATFORM`
+- **Email Verification Status:** Forced `verified = 1` upon bootstrap.
+
+### 5.2 Security Invariants & Zero-Leakage Policy
+1. **Zero Credential Storage:** No passwords, plaintext secrets, or temporary credentials are stored in any file, git history, client bundle, or `.env.example`.
+2. **PBKDF2 Password Hashing:** 100,000 rounds of PBKDF2 with SHA-256 and unique 16-byte cryptographically random salt per user.
+3. **One-Time Bootstrap Lockdown:** The `POST /api/v1/admin/bootstrap` endpoint verifies `x-bootstrap-secret` with constant-time equality. As soon as the first operator account is initialized or promoted, the endpoint is **permanently disabled** (HTTP 409 Conflict) to prevent takeover.
+4. **Server-Side Enforcement:** Every route under `/api/v1/admin/*` enforces `requireAuth()` followed by `isPlatformOperator(c.env.DB, userId)`. Requests without `platform_operator` role are terminated with HTTP 403 Forbidden.
+5. **Client-Side Security:** `/admin` and `/admin/applications` verify the operator claim. Non-operators attempting direct URL entry encounter a dedicated obsidian 403 Security Screen with automatic return routing.
+
+### 5.3 Step-by-Step Operator Initialization Instructions
+
+#### Step 1: Configure `BOOTSTRAP_SECRET` on Cloudflare Worker
+Run this once from your operator terminal to store the secret securely in Cloudflare's encrypted secret store:
+```bash
+npx wrangler secret put BOOTSTRAP_SECRET
+# Enter a high-entropy secret (e.g. 32+ random characters)
+```
+
+#### Step 2: Run the Silent Bootstrap Utility
+Run the interactive helper which prompts for the password and secret without echoing to stdout or writing to terminal history:
+```bash
+npm run admin:bootstrap
+```
+*Prompt sequence:*
+1. API Base URL (defaults to `https://trafficvaulthub.uttombarmon45.workers.dev`)
+2. Admin Email (defaults to `ubuttomkumar@gmail.com`)
+3. Display Name (defaults to `Platform Super Administrator`)
+4. `BOOTSTRAP_SECRET` (silent input via `read -s`)
+5. Master Password (silent input via `read -s`, minimum 12 chars, upper/lower/number/symbol)
+6. Confirm Password (silent input)
+
+#### Alternative: Manual cURL with Shell Memory Variables (No Disk Writes)
+If running manually without the script, use shell variables with `read -s` so credentials are never saved in `.bash_history`:
+```bash
+# 1. Silently capture secret and password in RAM only
+read -s -p "Enter BOOTSTRAP_SECRET: " B_SECRET && echo ""
+read -s -p "Enter Admin Password: " A_PASS && echo ""
+
+# 2. Transmit to remote worker over HTTPS
+curl -X POST "https://trafficvaulthub.uttombarmon45.workers.dev/api/v1/admin/bootstrap" \
+  -H "Content-Type: application/json" \
+  -H "x-bootstrap-secret: $B_SECRET" \
+  -d "{\"email\":\"ubuttomkumar@gmail.com\",\"password\":\"$A_PASS\",\"displayName\":\"Platform Super Administrator\"}"
+
+# 3. Immediately clear RAM variables
+unset B_SECRET A_PASS
+```
+
+#### Step 3: Sign In to Dedicated Admin Portal
+Visit:
+`https://trafficvaulthub.pages.dev/admin/login`
+- Enter `ubuttomkumar@gmail.com`
+- Enter your master password
+- Click **Authenticate Operator Session**
+- You will be automatically redirected to `/admin` with full operational capabilities.
+

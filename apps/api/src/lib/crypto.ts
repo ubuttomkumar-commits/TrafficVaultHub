@@ -22,12 +22,25 @@ export function timingSafeEqualString(a: string, b: string): boolean {
   const enc = new TextEncoder();
   const aBuf = enc.encode(a);
   const bBuf = enc.encode(b);
-  if (aBuf.byteLength !== bBuf.byteLength) {
-    // Run comparison against self to equalize execution time before returning false
-    crypto.subtle.timingSafeEqual(aBuf, aBuf);
-    return false;
+
+  // Use Node.js crypto.timingSafeEqual if available and buffer lengths match
+  if (typeof (globalThis as any).crypto !== "undefined" && typeof (globalThis as any).crypto.timingSafeEqual === "function") {
+    if (aBuf.byteLength !== bBuf.byteLength) {
+      (globalThis as any).crypto.timingSafeEqual(aBuf, aBuf);
+      return false;
+    }
+    return (globalThis as any).crypto.timingSafeEqual(aBuf, bBuf);
   }
-  return crypto.subtle.timingSafeEqual(aBuf, bBuf);
+
+  // Portable constant-time byte comparison across Cloudflare Workers & Vitest environments
+  const len = Math.max(aBuf.length, bBuf.length);
+  let diff = aBuf.length ^ bBuf.length;
+  for (let i = 0; i < len; i++) {
+    const byteA = i < aBuf.length ? aBuf[i] : 0;
+    const byteB = i < bBuf.length ? bBuf[i] : 0;
+    diff |= byteA ^ byteB;
+  }
+  return diff === 0;
 }
 
 export function constantTimeEqual(a: string, b: string): boolean {

@@ -199,7 +199,46 @@ export function AdminDashboardPage() {
     }
   }
 
-  // Permission-Denied Screen
+  // 403 Forbidden Screen
+  if (error && error.includes("Access restricted")) {
+    const rawUser = localStorage.getItem("tvh_user");
+    let currentEmail = "Active Account";
+    try {
+      if (rawUser) currentEmail = JSON.parse(rawUser).email || currentEmail;
+    } catch {
+      /* non-fatal */
+    }
+
+    return (
+      <div className={styles.page}>
+        <div className={styles.authRequiredCard} style={{ borderColor: "rgba(244,63,94,0.35)" }}>
+          <div style={{ fontSize: "2.5rem", marginBottom: "0.75rem" }}>🚫</div>
+          <h1 className={styles.authTitle}>403 Forbidden: Operator Role Required</h1>
+          <p className={styles.authDescription}>
+            Signed in as <strong style={{ color: "#fff" }}>{currentEmail}</strong>. This account does not possess Platform Operator privileges. Access to the command cockpit requires an authorized operator or super administrator account.
+          </p>
+          <Link
+            to="/admin/login"
+            className={styles.quickAuthButton}
+            style={{ textDecoration: "none", display: "inline-block", textAlign: "center" }}
+            onClick={() => {
+              localStorage.removeItem("tvh_token");
+              localStorage.removeItem("tvh_user");
+            }}
+          >
+            Switch to Platform Operator Account →
+          </Link>
+          <div style={{ marginTop: "1rem" }}>
+            <Link to="/earnings" style={{ color: "var(--color-text-muted)", fontSize: "0.82rem" }}>
+              ← Return to Partner Dashboard
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Permission-Denied Screen (Unauthenticated)
   if (!token) {
     return (
       <div className={styles.page}>

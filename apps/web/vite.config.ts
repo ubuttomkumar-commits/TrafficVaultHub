@@ -344,19 +344,96 @@ function devMockApiPlugin(): Plugin {
           });
         }
 
+        // Admin Bootstrap endpoint (matches Worker API /api/v1/admin/bootstrap)
+        if (pathname === "/api/v1/admin/bootstrap" && req.method === "POST") {
+          const body = await readRequestBody(req);
+          const secretProvided = req.headers["x-bootstrap-secret"] || body.bootstrapSecret;
+          const expectedSecret = process.env.BOOTSTRAP_SECRET || "TrafficVaultHub-Dev-Bootstrap-Secret-2026";
+
+          if (!secretProvided || secretProvided !== expectedSecret) {
+            return sendJson(res, 401, {
+              error: { code: "unauthorized", message: "Invalid bootstrap authorization secret." }
+            });
+          }
+
+          const email = (body.email || "").trim().toLowerCase();
+          if (!email || !email.includes("@")) {
+            return sendJson(res, 400, {
+              error: { code: "invalid_email", message: "Valid platform administrator email required." }
+            });
+          }
+
+          const password = body.password || "";
+          if (password.length < 12) {
+            return sendJson(res, 400, {
+              error: { code: "weak_password", message: "Password must be at least 12 characters long." }
+            });
+          }
+
+          let existingUser = mockUsers.find(u => u.email.toLowerCase() === email);
+          if (existingUser) {
+            existingUser.organization_type = "PLATFORM";
+            existingUser.role_name = "Super Admin";
+            existingUser.status = "ACTIVE";
+          } else {
+            existingUser = {
+              id: "usr_admin_" + Math.random().toString(36).substring(2, 9),
+              email,
+              display_name: body.displayName || "Platform Super Administrator",
+              status: "ACTIVE",
+              created_at: new Date().toISOString(),
+              last_login_at: new Date().toISOString(),
+              organization_id: "org_platform_01",
+              organization_name: "TrafficVaultHub Platform Operations",
+              organization_type: "PLATFORM",
+              role_name: "Super Admin",
+            };
+            mockUsers.unshift(existingUser);
+          }
+
+          mockAuditLogs.unshift({
+            id: "aud_boot_" + Math.random().toString(36).substring(2, 9),
+            action: "SYSTEM_ADMIN_BOOTSTRAP",
+            resource_id: existingUser.id,
+            details: { email, role: "SUPER_ADMIN", initiated_by: "bootstrap_secret" },
+            created_at: new Date().toISOString()
+          });
+
+          return sendJson(res, 201, {
+            data: {
+              userId: existingUser.id,
+              email: existingUser.email,
+              organizationId: existingUser.organization_id,
+              role: "SUPER_ADMIN",
+              message: "Platform administrator account successfully initialized. Bootstrap is now permanently disabled."
+            }
+          });
+        }
+
         // Auth login
         if (pathname === "/api/v1/auth/login" && req.method === "POST") {
           const body = await readRequestBody(req);
-          const email = (body.email || "").toLowerCase();
-          const isAdmin = email.includes("admin");
+          const email = (body.email || "").toLowerCase().trim();
+          const foundUser = mockUsers.find(u => u.email.toLowerCase() === email);
+
+          const isAdmin =
+            email === "ubuttomkumar@gmail.com" ||
+            email.includes("admin") ||
+            (foundUser && (foundUser.organization_type === "PLATFORM" || foundUser.role_name === "Super Admin"));
+
+          const token = isAdmin
+            ? "tvh_admin_token_" + Math.random().toString(36).substring(2, 10)
+            : "tvh_pub_token_" + Math.random().toString(36).substring(2, 10);
+
           return sendJson(res, 200, {
             data: {
-              token: "tvh_live_session_token",
+              token,
               user: {
-                id: isAdmin ? "usr_admin_01" : "usr_pub_01",
-                email: body.email || "partner@trafficvaulthub.com",
+                id: foundUser ? foundUser.id : (isAdmin ? "usr_admin_01" : "usr_pub_01"),
+                email: email || (isAdmin ? "admin@trafficvaulthub.local" : "partner@trafficvaulthub.com"),
                 role: isAdmin ? "super_admin" : "publisher",
-                organizationId: isAdmin ? "org_platform_01" : "org_traffic_vault"
+                isOperator: Boolean(isAdmin),
+                organizationId: foundUser ? foundUser.organization_id : (isAdmin ? "org_platform_01" : "org_traffic_vault")
               }
             }
           });

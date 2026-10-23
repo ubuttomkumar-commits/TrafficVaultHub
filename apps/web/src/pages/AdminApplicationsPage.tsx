@@ -302,6 +302,64 @@ export function AdminApplicationsPage() {
     setSortOrder("DESC");
   }
 
+  if (!token) {
+    return (
+      <div className={styles.page}>
+        <div style={{ maxWidth: "32rem", margin: "3rem auto", background: "var(--color-bg-surface)", border: "1px solid var(--color-border-strong)", borderRadius: "var(--radius-lg)", padding: "2.5rem", textAlign: "center", boxShadow: "var(--shadow-lg)" }}>
+          <div style={{ width: "3.5rem", height: "3.5rem", margin: "0 auto 1.25rem", borderRadius: "50%", background: "var(--color-accent-cyan-dim)", border: "1px solid rgba(34,211,238,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem" }}>
+            🛡️
+          </div>
+          <h2 style={{ fontSize: "1.35rem", fontWeight: 700, color: "#fff", margin: "0 0 0.5rem" }}>
+            Operator Authentication Required
+          </h2>
+          <p style={{ color: "var(--color-text-secondary)", fontSize: "0.88rem", lineHeight: 1.5, margin: "0 0 1.5rem" }}>
+            The Partner Verification Queue contains sensitive PII, corporate KYC documents, and anti-fraud telemetry. Active Platform Operator credentials are required.
+          </p>
+          <Link
+            to="/admin/login"
+            className={styles.btnPrimary}
+            style={{ width: "100%", justifyContent: "center", padding: "0.65rem 1rem", fontSize: "0.9rem" }}
+          >
+            Authenticate at Operator Console →
+          </Link>
+          <div style={{ marginTop: "1rem" }}>
+            <Link to="/" style={{ color: "var(--color-text-muted)", fontSize: "0.82rem" }}>
+              ← Return to Network Overview
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error && (error.toLowerCase().includes("restricted") || error.toLowerCase().includes("forbidden") || error.toLowerCase().includes("privilege"))) {
+    return (
+      <div className={styles.page}>
+        <div style={{ maxWidth: "32rem", margin: "3rem auto", background: "var(--color-bg-surface)", border: "1px solid rgba(244,63,94,0.35)", borderRadius: "var(--radius-lg)", padding: "2.5rem", textAlign: "center", boxShadow: "var(--shadow-lg)" }}>
+          <div style={{ fontSize: "2rem", marginBottom: "0.75rem" }}>🚫</div>
+          <h2 style={{ fontSize: "1.35rem", fontWeight: 700, color: "#fff", margin: "0 0 0.5rem" }}>
+            403 Forbidden: Access Restricted
+          </h2>
+          <p style={{ color: "var(--color-text-secondary)", fontSize: "0.88rem", lineHeight: 1.5, margin: "0 0 1.5rem" }}>
+            Your account is authenticated, but does not possess Platform Operator privileges. Access to the partner onboarding queue is restricted to authorized platform administrators.
+          </p>
+          <Link
+            to="/admin/login"
+            className={styles.btnPrimary}
+            style={{ width: "100%", justifyContent: "center", padding: "0.65rem 1rem", fontSize: "0.9rem" }}
+          >
+            Switch to Operator Account →
+          </Link>
+          <div style={{ marginTop: "1rem" }}>
+            <Link to="/earnings" style={{ color: "var(--color-text-muted)", fontSize: "0.82rem" }}>
+              ← Go to Partner Dashboard
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.page}>
       {/* Breadcrumbs */}

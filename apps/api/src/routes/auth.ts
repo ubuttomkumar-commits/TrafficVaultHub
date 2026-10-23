@@ -11,6 +11,7 @@ import { sha256Hex } from "../lib/crypto";
 import { requireAuth } from "../middleware/auth";
 import { rateLimit } from "../middleware/rate-limit";
 import { createAndSendOtp, verifyEmailOtp } from "../lib/email-otp";
+import { isPlatformOperator } from "../lib/rbac";
 
 export const authRoutes = new Hono<{ Bindings: Env }>();
 
@@ -195,6 +196,8 @@ authRoutes.post("/login", rateLimit({ keyPrefix: "login", limit: 20, windowSecon
     /* non-fatal */
   }
 
+  const isOperator = await isPlatformOperator(c.env.DB, row.user_id);
+
   return c.json({
     data: {
       token: rawToken,
@@ -203,6 +206,8 @@ authRoutes.post("/login", rateLimit({ keyPrefix: "login", limit: 20, windowSecon
         id: row.user_id,
         email: row.email,
         displayName: row.display_name,
+        role: isOperator ? "super_admin" : "publisher",
+        isOperator,
       },
     },
     correlationId,
