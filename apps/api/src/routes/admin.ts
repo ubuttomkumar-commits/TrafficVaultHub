@@ -1,11 +1,51 @@
 import { Hono } from "hono";
+import { HTTPException } from "hono/http-exception";
 import type { Env } from "../env";
 import { requireAuth } from "../middleware/auth";
-import { isPlatformOperator } from "../lib/rbac";
+import { isPlatformOperator, PLATFORM_OPS_ROLE_IDS } from "../lib/rbac";
+import { executeAdminBootstrap } from "../lib/bootstrap";
+import { rateLimit } from "../middleware/rate-limit";
+import { sha256Hex } from "../lib/crypto";
 
 export const adminRoutes = new Hono<{ Bindings: Env }>();
 
-// All admin routes strictly enforce platform operator permissions
+/**
+ * POST /api/v1/admin/bootstrap
+ * Secure, one-time bootstrap endpoint for creating the first platform administrator.
+ * Protected by BOOTSTRAP_SECRET and permanently disabled once an admin exists.
+ */
+adminRoutes.post("/bootstrap", rateLimit({ keyPrefix: "bootstrap", limit: 5, windowSeconds: 900 }), async (c) => {
+  const correlationId = c.get("correlationId");
+  let body: {
+    email?: string;
+    password?: string;
+    displayName?: string;
+    bootstrapSecret?: string;
+  };
+  try {
+    body = await c.req.json();
+  } catch {
+    throw new HTTPException(400, { message: "Invalid JSON body" });
+  }
+
+  const secretProvided = c.req.header("x-bootstrap-secret") || body.bootstrapSecret;
+
+  const result = await executeAdminBootstrap(
+    c.env.DB,
+    c.env,
+    {
+      email: body.email || "",
+      password: body.password || "",
+      displayName: body.displayName,
+      secretProvided,
+    },
+    correlationId
+  );
+
+  return c.json({ data: result, correlationId }, 201);
+});
+
+// All subsequent admin routes strictly enforce platform operator permissions
 adminRoutes.use("*", requireAuth(), async (c, next) => {
   const correlationId = c.get("correlationId");
   const user = c.get("user")!;
@@ -85,6 +125,69 @@ adminRoutes.get("/overview", async (c) => {
       };
     }
 
+    let partnerAppResults: Array<{ status: string; count: number }> = [];
+    let pendingPublishers = 0;
+    let pendingAdvertisers = 0;
+    let highRiskPending = 0;
+    let totalApps = 0;
+    let verifiedApps = 0;
+    let decisions24h = 0;
+    let recentAuditFeed: any[] = [];
+
+    try {
+      const [appCounts, typeStatusCounts, verifStats, highRiskRes, recentDecisionsRes, auditFeedRes] = await Promise.all([
+        c.env.DB.prepare(
+          `SELECT status, COUNT(*) AS count FROM partner_applications GROUP BY status`
+        ).all<{ status: string; count: number }>(),
+
+        c.env.DB.prepare(
+          `SELECT account_type, status, COUNT(*) AS count FROM partner_applications GROUP BY account_type, status`
+        ).all<{ account_type: string; status: string; count: number }>(),
+
+        c.env.DB.prepare(
+          `SELECT COUNT(*) AS total, SUM(CASE WHEN email_verified = 1 THEN 1 ELSE 0 END) AS verified FROM partner_applications`
+        ).first<{ total: number; verified: number }>(),
+
+        c.env.DB.prepare(
+          `SELECT COUNT(*) AS high_risk FROM partner_applications WHERE risk_score >= 25 AND status = 'PENDING_REVIEW'`
+        ).first<{ high_risk: number }>(),
+
+        c.env.DB.prepare(
+          `SELECT COUNT(*) AS count FROM review_audit_log
+           WHERE action IN ('FULL_APPROVAL', 'CONDITIONAL_APPROVAL', 'REJECTION', 'REQUEST_MORE_DOCS', 'SCHEDULE_CALL')
+             AND created_at > datetime('now', '-24 hours')`
+        ).first<{ count: number }>(),
+
+        c.env.DB.prepare(
+          `SELECT ral.id, ral.application_id, ral.actor_id, ral.action, ral.reason_code, ral.notes, ral.created_at,
+                  pa.first_name, pa.last_name, pa.account_type, pa.email
+           FROM review_audit_log ral
+           LEFT JOIN partner_applications pa ON pa.id = ral.application_id
+           ORDER BY ral.created_at DESC
+           LIMIT 8`
+        ).all<any>(),
+      ]);
+
+      partnerAppResults = appCounts.results ?? [];
+
+      for (const row of typeStatusCounts.results ?? []) {
+        if (row.status === "PENDING_REVIEW") {
+          if (row.account_type === "PUBLISHER") pendingPublishers = row.count;
+          if (row.account_type === "ADVERTISER") pendingAdvertisers = row.count;
+        }
+      }
+
+      totalApps = verifStats?.total ?? 0;
+      verifiedApps = verifStats?.verified ?? 0;
+      highRiskPending = highRiskRes?.high_risk ?? 0;
+      decisions24h = recentDecisionsRes?.count ?? 0;
+      recentAuditFeed = auditFeedRes.results ?? [];
+    } catch (dbErr) {
+      console.warn("Notice: partner application metrics query:", dbErr);
+    }
+
+    const emailVerificationRate = totalApps > 0 ? Math.round((verifiedApps / totalApps) * 100) : 100;
+
     return c.json({
       data: {
         users: { total: userCount?.total ?? 0 },
@@ -94,6 +197,25 @@ adminRoutes.get("/overview", async (c) => {
         complianceCases: compliance.results ?? [],
         payouts: payouts.results ?? [],
         journalEntries: journal.results ?? [],
+        partnerApplications: partnerAppResults,
+        operationalMetrics: {
+          pendingPublishers,
+          pendingAdvertisers,
+          highRiskPending,
+          totalApplications: totalApps,
+          verifiedApplications: verifiedApps,
+          emailVerificationRate,
+          decisions24h,
+          openComplianceCases: compliance.results?.filter((c) => c.status === "OPEN").length ?? 0,
+        },
+        recentAuditFeed,
+        systemHealth: {
+          status: "OPERATIONAL",
+          apiVersion: c.env.API_VERSION || "v1",
+          environment: c.env.ENVIRONMENT || "development",
+          database: "D1_ACTIVE",
+          checkedAt: new Date().toISOString(),
+        },
       },
       correlationId,
     });

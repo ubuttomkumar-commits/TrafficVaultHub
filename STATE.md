@@ -18,7 +18,8 @@
 | **Tracking, Caps & Smartlinks** | 12 | 12 | 0 | 100% |
 | **Compliance, Fraud & Disputes** | 10 | 10 | 0 | 100% |
 | **Security, RBAC & Secrets** | 8 | 8 | 0 | 100% |
-| **Automated Vitest Test Suites** | 9 suites / 35 tests | 35 tests passing | 0 | 100% |
+| **Email OTP & Anti-Scam Review** | 8 | 8 | 0 | 100% |
+| **Automated Vitest Test Suites** | 11 suites / 43 tests | 43 tests passing | 0 | 100% |
 
 ---
 
@@ -68,7 +69,7 @@
 - [x] `POST /api/v1/evidence/upload` — Private evidence file upload with tenant isolation (5MB guard).
 
 ### 2.3 Database, Durable Objects & Infrastructure
-- [x] **D1 Database**: Migrations `0001` through `0005` covering organizations, users, credentials, sessions, categories, offers, versions, clicks, conversions, journal entries, ledger accounts, compliance cases, smartlinks, and payout requests.
+- [x] **D1 Database**: Migrations `0001` through `0008` covering organizations, users, credentials, sessions, categories, offers, versions, clicks, conversions, journal entries, ledger accounts, compliance cases, smartlinks, payout requests, offer access applications, onboarding KYC/KYB records (`partner_applications`, `verification_dimensions`, `application_documents`, `review_audit_log`), and `email_otps`.
 - [x] **Durable Objects (`OfferCapDO`)**: Atomic serialization of click and conversion cap reservations with D1 sync fallback.
 - [x] **KV Namespace**: Rate limiting, session lookups, and offer lookup caching without violating financial invariants.
 - [x] **Queues**: `trafficvaulthub-events` configured for decoupled conversion processing.
@@ -80,6 +81,8 @@ All environment variables and secret names are declared and accessed via `c.env`
 - `TURNSTILE_SECRET_KEY`: Used for bot protection on public login and registration. (Managed via `wrangler secret put TURNSTILE_SECRET_KEY`).
 - `POSTBACK_HMAC_SECRET`: Used for cryptographic validation of S2S postback callbacks. (Managed via `wrangler secret put POSTBACK_HMAC_SECRET`).
 - `JWT_SECRET`: Used for service-to-service token signing. (Managed via `wrangler secret put JWT_SECRET`).
+- `RESEND_API_KEY`: Used for transactional email OTP dispatch via Resend API. (Managed via `wrangler secret put RESEND_API_KEY`).
+- `EMAIL_FROM`: Sender address for verification codes, e.g. `TrafficVaultHub <onboarding@yourdomain.com>`.
 
 ---
 
@@ -95,14 +98,17 @@ All environment variables and secret names are declared and accessed via `c.env`
 | 2026-10-23 (`current`) | Cloudflare Connection & Deploy | Authenticated Cloudflare API Token for `Uttombarmon45@gmail.com's Account`, provisioned secrets (`SESSION_SECRET`, `POSTBACK_HMAC_SECRET`, `JWT_SECRET`, `TURNSTILE_SECRET_KEY`), and deployed Worker & Pages |
 | 2026-10-23 (`production`) | Universal Models & Access Flows | Expanded 12 payout models (CPV, CPE, CPC, CPM, RECURRING, REVSHARE, HYBRID, CUSTOM_EVENT), added category hierarchy administration with cycle prevention, implemented offer application & access approval flow, and expanded Vitest suite to 30 passing tests |
 | 2026-10-23 (`verified`) | Registration & Admin Cockpit | Implemented public partner signup (`POST /api/v1/auth/register`, `/signup`), dedicated platform admin operations dashboard (`/admin`, `adminRoutes`), wired hero CTAs, and added registration invariant tests (35 passing tests) |
+| 2026-10-23 (`completed`) | Email OTP & Admin Verification Cockpit | Synchronized migrations 0001–0008, integrated automatic email OTP verification flow on register & onboarding with Resend and dev console fallback, rate limits (3 OTPs / 15 min, 5 attempts max), constant-time comparison, admin KYC/KYB dossier inspection, probationary approval controls with daily click caps and reserve holds, and expanded Vitest test suite to 11 suites / 43 tests passing |
+| 2026-10-23 (`world-class`) | Premium Admin Dashboard & Operations Cockpit | Completed world-class Admin Command Center (`/admin`) and Applications Review Queue (`/admin/applications`): real-time queue counters, multi-parameter search/filters, floating bulk actions drawer (`/bulk-decision`), comprehensive partner dossier with 6 tabs, interactive verification dimension controls (`PATCH /dimensions/:dim`), encrypted document audit inspector with SHA256 checksums, and compliance decision engine (full approve, probationary caps, doc requests, interview scheduling, standardized rejection codes) |
 
 ---
 
 ## 4. Live Deployment Status
 
 - **Cloudflare Account**: `Uttombarmon45@gmail.com's Account` (`fa6ffb91f755b6a7066cd0cf4ce70556`)
-- **Web Application (Cloudflare Pages)**: `https://trafficvaulthub.pages.dev` (Latest build: `https://d1a338bf.trafficvaulthub.pages.dev`)
+- **Web Application (Cloudflare Pages)**: `https://trafficvaulthub.pages.dev` (Latest build: `https://1b41af3d.trafficvaulthub.pages.dev`)
 - **API Worker (Cloudflare Workers)**: `https://trafficvaulthub.uttombarmon45.workers.dev`
   - Health check: `https://trafficvaulthub.uttombarmon45.workers.dev/api/v1/health` (Status 200 OK, database: ok)
-- **Development App URL**: `https://ais-dev-n757ih3r5yaboq4tifvem3-308187919618.asia-southeast1.run.app`
-- **Shared App URL**: `https://ais-pre-n757ih3r5yaboq4tifvem3-308187919618.asia-southeast1.run.app`
+- **Local Dev Server**: Port 3000 (running Vite dev server with synchronized mock APIs)
+- **Shared App URL**: `https://ais-pre-fe7qppb5jpommhkeeln5g7-801024355645.asia-southeast1.run.app`
+

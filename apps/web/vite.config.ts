@@ -442,7 +442,33 @@ function devMockApiPlugin(): Plugin {
                 { status: "PROCESSED", count: 1, total_minor: 50000 },
                 { status: "PENDING", count: 1, total_minor: 75000 }
               ],
-              journalEntries: []
+              journalEntries: [],
+              partnerApplications: [
+                { status: "PENDING_REVIEW", count: mockApplications.filter(a => a.status === "PENDING_REVIEW").length },
+                { status: "APPROVED", count: mockApplications.filter(a => a.status === "APPROVED").length },
+              ],
+              operationalMetrics: {
+                pendingPublishers: mockApplications.filter(a => a.account_type === "PUBLISHER" && a.status === "PENDING_REVIEW").length,
+                pendingAdvertisers: mockApplications.filter(a => a.account_type === "ADVERTISER" && a.status === "PENDING_REVIEW").length,
+                highRiskPending: mockApplications.filter(a => (a.risk_score || 0) >= 20 && a.status === "PENDING_REVIEW").length,
+                totalApplications: mockApplications.length,
+                verifiedApplications: mockApplications.filter(a => a.email_verified === 1).length,
+                emailVerificationRate: Math.round((mockApplications.filter(a => a.email_verified === 1).length / mockApplications.length) * 100),
+                decisions24h: 3,
+                openComplianceCases: complianceCases.filter(c => c.status === "OPEN").length,
+              },
+              recentAuditFeed: [
+                { id: "aud_1", action: "FULL_APPROVAL", notes: "Identity and Tier-1 search traffic evidence corroborated", actor_id: "usr_admin_01", created_at: new Date(Date.now() - 3600000).toISOString(), first_name: "Marcus", last_name: "Vance", account_type: "PUBLISHER", email: "marcus.vance@apexaffiliates.com" },
+                { id: "aud_2", action: "REQUEST_MORE_DOCS", notes: "Requested UK Companies House certificate amendment", actor_id: "usr_admin_01", created_at: new Date(Date.now() - 7200000).toISOString(), first_name: "Elena", last_name: "Rostova", account_type: "ADVERTISER", email: "billing@auroracryptosec.io" },
+                { id: "aud_3", action: "EMAIL_OTP_VERIFIED", notes: "Email verified via 6-digit cryptographic OTP", actor_id: "applicant", created_at: new Date(Date.now() - 14400000).toISOString(), first_name: "Marcus", last_name: "Vance", account_type: "PUBLISHER", email: "marcus.vance@apexaffiliates.com" }
+              ],
+              systemHealth: {
+                status: "OPERATIONAL",
+                apiVersion: "v5.0",
+                environment: "development (Vite preview)",
+                database: "D1_ACTIVE",
+                checkedAt: new Date().toISOString()
+              }
             }
           });
         }
@@ -703,14 +729,66 @@ function devMockApiPlugin(): Plugin {
           return sendJson(res, 200, { data: { ok: true, phoneVerified: true } });
         }
 
-        // Admin: List Onboarding Applications
+        // Admin: List Onboarding Applications with advanced filters and sorting
         if (pathname === "/api/v1/onboarding/admin/applications") {
           const st = searchParams.get("status");
           const tp = searchParams.get("accountType");
-          let list = mockApplications;
+          const q = (searchParams.get("search") || "").toLowerCase().trim();
+          const rk = (searchParams.get("riskLevel") || "").toUpperCase();
+          const ev = searchParams.get("emailVerified");
+          const sb = searchParams.get("sortBy") || "risk_score";
+          const so = searchParams.get("sortOrder") || "DESC";
+
+          let list = [...mockApplications];
           if (st && st !== "ALL") list = list.filter(a => a.status === st);
           if (tp && tp !== "ALL") list = list.filter(a => a.account_type === tp);
+          if (ev === "1" || ev === "true") list = list.filter(a => a.email_verified === 1);
+          else if (ev === "0" || ev === "false") list = list.filter(a => a.email_verified === 0);
+          if (rk === "HIGH") list = list.filter(a => (a.risk_score || 0) >= 20);
+          else if (rk === "MEDIUM") list = list.filter(a => (a.risk_score || 0) >= 10 && (a.risk_score || 0) < 20);
+          else if (rk === "LOW") list = list.filter(a => (a.risk_score || 0) < 10);
+
+          if (q) {
+            list = list.filter(a =>
+              (a.first_name && a.first_name.toLowerCase().includes(q)) ||
+              (a.last_name && a.last_name.toLowerCase().includes(q)) ||
+              (a.email && a.email.toLowerCase().includes(q)) ||
+              (a.company_name && a.company_name.toLowerCase().includes(q)) ||
+              (a.id && a.id.toLowerCase().includes(q))
+            );
+          }
+
+          list.sort((a, b) => {
+            if (sb === "created_at") {
+              const diff = new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+              return so === "ASC" ? -diff : diff;
+            }
+            if (sb === "status") {
+              return so === "ASC" ? a.status.localeCompare(b.status) : b.status.localeCompare(a.status);
+            }
+            const diff = (b.risk_score || 0) - (a.risk_score || 0);
+            return so === "ASC" ? -diff : diff;
+          });
+
           return sendJson(res, 200, { data: list });
+        }
+
+        // Admin: Bulk Decision on Applications
+        if (pathname === "/api/v1/onboarding/admin/applications/bulk-decision" && req.method === "POST") {
+          const body = await readRequestBody(req);
+          const ids: string[] = Array.isArray(body.applicationIds) ? body.applicationIds : [];
+          const dec = body.decision;
+          ids.forEach((id) => {
+            const found = mockApplications.find((a) => a.id === id);
+            if (found) {
+              if (dec === "APPROVE") found.status = "APPROVED";
+              else if (dec === "PROBATIONARY_APPROVE") found.status = "PROBATIONARY_APPROVED";
+              else if (dec === "REJECT") found.status = "REJECTED";
+              else if (dec === "REQUEST_DOCS") found.status = "DOCS_REQUESTED";
+              found.decision_notes = body.notes || "Bulk decision applied";
+            }
+          });
+          return sendJson(res, 200, { data: { success: true, count: ids.length, status: dec } });
         }
 
         // Admin: Get Single Application
@@ -728,6 +806,23 @@ function devMockApiPlugin(): Plugin {
               ]
             }
           });
+        }
+
+        // Admin: Update Single Dimension
+        const dimPatchMatch = pathname.match(/^\/api\/v1\/onboarding\/admin\/applications\/([^/]+)\/dimensions\/([^/]+)$/);
+        if (dimPatchMatch && req.method === "PATCH") {
+          const appId = dimPatchMatch[1];
+          const dimKey = dimPatchMatch[2].toUpperCase();
+          const body = await readRequestBody(req);
+          if (mockDimensions[appId]) {
+            const match = mockDimensions[appId].find(d => d.dimension === dimKey);
+            if (match) {
+              if (body.stage) match.stage = body.stage;
+              if (body.status) match.status = body.status;
+              if (body.reviewerNotes) match.reviewer_notes = body.reviewerNotes;
+            }
+          }
+          return sendJson(res, 200, { data: { ok: true, appId, dimension: dimKey } });
         }
 
         // Admin: Decision on Application

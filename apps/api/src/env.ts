@@ -28,6 +28,8 @@ export type Env = {
   // Secrets (injected at runtime)
   SESSION_SECRET?: string;
   TURNSTILE_SECRET_KEY?: string;
+  /** Cryptographically strong secret required for one-time first admin account bootstrap */
+  BOOTSTRAP_SECRET?: string;
 
   // Transactional Email Service (Resend)
   RESEND_API_KEY?: string;

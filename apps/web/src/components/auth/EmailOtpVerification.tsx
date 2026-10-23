@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type ReactNode } from "react";
 import { apiUrl } from "../../lib/api";
 import styles from "./EmailOtpVerification.module.css";
 
@@ -8,7 +8,7 @@ type Props = {
   onVerified: () => void;
   onCancel?: () => void;
   title?: string;
-  subtitle?: string;
+  subtitle?: ReactNode;
 };
 
 export function EmailOtpVerification({

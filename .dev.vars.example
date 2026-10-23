@@ -3,3 +3,5 @@
 # SESSION_SECRET=generate-a-long-random-string
 # TURNSTILE_SECRET_KEY=
 # JWT_SECRET=
+# RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxx
+# EMAIL_FROM=TrafficVaultHub <onboarding@yourdomain.com>
