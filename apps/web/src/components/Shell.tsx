@@ -17,8 +17,10 @@ const NAV = [
   { to: "/campaign-studio", label: "Campaign studio" },
   { to: "/compliance", label: "Compliance" },
   { to: "/payouts", label: "Payouts" },
+  { to: "/admin", label: "Admin" },
+  { to: "/health", label: "Health" },
+  { to: "/signup", label: "Sign up" },
   { to: "/login", label: "Sign in" },
-  { to: "/health", label: "System Health" },
 ] as const;
 
 export function Shell({ children }: { children: ReactNode }) {
@@ -63,7 +65,7 @@ export function Shell({ children }: { children: ReactNode }) {
           <span className={styles.tagline}>{PRODUCT_TAGLINE}</span>
         </div>
         <nav className={styles.nav} aria-label="Primary">
-          {NAV.filter((item) => !(token && item.to === "/login")).map((item) => {
+          {NAV.filter((item) => !(token && (item.to === "/login" || item.to === "/signup"))).map((item) => {
             const active = location.pathname === item.to;
             return (
               <Link

@@ -12,13 +12,13 @@
 | Category | Total Defined | Completed & Verified | Incomplete / External Dependency | Completion Rate |
 |---|---|---|---|---|
 | **Core Architecture & Schemas** | 12 | 12 | 0 | 100% |
-| **Backend API Endpoints** | 28 | 26 | 2 (External Payment APIs, R2 bucket) | 92.8% |
-| **Frontend UI Pages & Flows** | 17 | 17 | 0 | 100% |
+| **Backend API Endpoints** | 32 | 30 | 2 (External Payment APIs, R2 bucket) | 93.7% |
+| **Frontend UI Pages & Flows** | 19 | 19 | 0 | 100% |
 | **Financial Ledger & Invariants** | 10 | 10 | 0 | 100% |
 | **Tracking, Caps & Smartlinks** | 12 | 12 | 0 | 100% |
 | **Compliance, Fraud & Disputes** | 10 | 10 | 0 | 100% |
 | **Security, RBAC & Secrets** | 8 | 8 | 0 | 100% |
-| **Automated Vitest Test Suites** | 8 suites / 30 tests | 30 tests passing | 0 | 100% |
+| **Automated Vitest Test Suites** | 9 suites / 35 tests | 35 tests passing | 0 | 100% |
 
 ---
 
@@ -94,6 +94,7 @@ All environment variables and secret names are declared and accessed via `c.env`
 | 2026-10-21 (`c46cde4`) | Reference-Match Landing Page | Complete 9-section 1:1 match of reference design: 3D Vault hero, value cards, 5-step process, 12 categories, trust globe, product previews, and cosmic CTA |
 | 2026-10-23 (`current`) | Cloudflare Connection & Deploy | Authenticated Cloudflare API Token for `Uttombarmon45@gmail.com's Account`, provisioned secrets (`SESSION_SECRET`, `POSTBACK_HMAC_SECRET`, `JWT_SECRET`, `TURNSTILE_SECRET_KEY`), and deployed Worker & Pages |
 | 2026-10-23 (`production`) | Universal Models & Access Flows | Expanded 12 payout models (CPV, CPE, CPC, CPM, RECURRING, REVSHARE, HYBRID, CUSTOM_EVENT), added category hierarchy administration with cycle prevention, implemented offer application & access approval flow, and expanded Vitest suite to 30 passing tests |
+| 2026-10-23 (`verified`) | Registration & Admin Cockpit | Implemented public partner signup (`POST /api/v1/auth/register`, `/signup`), dedicated platform admin operations dashboard (`/admin`, `adminRoutes`), wired hero CTAs, and added registration invariant tests (35 passing tests) |
 
 ---
 

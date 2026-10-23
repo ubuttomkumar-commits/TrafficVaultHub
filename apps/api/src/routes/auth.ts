@@ -347,3 +347,261 @@ authRoutes.post("/bootstrap", async (c) => {
     201
   );
 });
+
+async function ensureAuthTables(db: D1Database) {
+  try {
+    await db.batch([
+      db.prepare(`
+        CREATE TABLE IF NOT EXISTS affiliate_profiles (
+          id              TEXT PRIMARY KEY NOT NULL,
+          organization_id TEXT NOT NULL,
+          status          TEXT NOT NULL DEFAULT 'ACTIVE',
+          created_at      TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+        )
+      `),
+      db.prepare(`
+        CREATE TABLE IF NOT EXISTS advertiser_profiles (
+          id              TEXT PRIMARY KEY NOT NULL,
+          organization_id TEXT NOT NULL,
+          status          TEXT NOT NULL DEFAULT 'ACTIVE',
+          created_at      TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+        )
+      `),
+      db.prepare(`
+        CREATE TABLE IF NOT EXISTS roles (
+          id          TEXT PRIMARY KEY NOT NULL,
+          name        TEXT NOT NULL,
+          description TEXT
+        )
+      `),
+      db.prepare(`
+        INSERT OR IGNORE INTO roles (id, name, description) VALUES
+          ('00000000-0000-4000-8000-000000000101', 'Super Administrator', 'Full platform control'),
+          ('00000000-0000-4000-8000-000000000102', 'Platform Operator', 'Operational and compliance review'),
+          ('00000000-0000-4000-8000-000000000103', 'Platform Finance', 'Financial and payout control'),
+          ('00000000-0000-4000-8000-000000000201', 'Affiliate Owner', 'Primary affiliate account administrator'),
+          ('00000000-0000-4000-8000-000000000301', 'Advertiser Owner', 'Primary advertiser account administrator')
+      `),
+    ]);
+  } catch (err) {
+    console.warn("ensureAuthTables initialization:", err);
+  }
+}
+
+/**
+ * Public registration for Publishers and Advertisers.
+ * Strictly blocks privileged roles.
+ */
+authRoutes.post("/register", rateLimit({ keyPrefix: "register", limit: 10, windowSeconds: 60 }), async (c) => {
+  const correlationId = c.get("correlationId");
+  await ensureAuthTables(c.env.DB);
+
+  let body: {
+    email?: string;
+    password?: string;
+    displayName?: string;
+    accountType?: string;
+    organizationName?: string;
+  };
+
+  try {
+    body = await c.req.json();
+  } catch {
+    throw new HTTPException(400, { message: "Invalid JSON body" });
+  }
+
+  const email = body.email?.trim().toLowerCase();
+  const password = body.password ?? "";
+  const displayName = body.displayName?.trim() || "";
+  const rawType = (body.accountType || "PUBLISHER").trim().toUpperCase();
+
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return c.json(
+      {
+        error: {
+          code: "validation_error",
+          message: "A valid email address is required",
+          correlationId,
+        },
+      },
+      400
+    );
+  }
+
+  if (password.length < 8) {
+    return c.json(
+      {
+        error: {
+          code: "validation_error",
+          message: "Password must be at least 8 characters long",
+          correlationId,
+        },
+      },
+      400
+    );
+  }
+
+  if (!displayName || displayName.length < 2) {
+    return c.json(
+      {
+        error: {
+          code: "validation_error",
+          message: "Display name must be at least 2 characters",
+          correlationId,
+        },
+      },
+      400
+    );
+  }
+
+  // Public registration must NEVER allow PLATFORM or ADMIN roles
+  if (rawType !== "PUBLISHER" && rawType !== "ADVERTISER") {
+    return c.json(
+      {
+        error: {
+          code: "validation_error",
+          message: "accountType must be either PUBLISHER or ADVERTISER",
+          correlationId,
+        },
+      },
+      400
+    );
+  }
+
+  const isAdvertiser = rawType === "ADVERTISER";
+  const orgType = isAdvertiser ? "ADVERTISER" : "AFFILIATE";
+  const roleId = isAdvertiser
+    ? "00000000-0000-4000-8000-000000000301"
+    : "00000000-0000-4000-8000-000000000201";
+
+  // Check duplicate email
+  const existing = await c.env.DB.prepare(
+    `SELECT id FROM users WHERE lower(email) = ? AND deleted_at IS NULL LIMIT 1`
+  )
+    .bind(email)
+    .first();
+
+  if (existing) {
+    return c.json(
+      {
+        error: {
+          code: "account_exists",
+          message: "An account with this email address already exists. Please sign in.",
+          correlationId,
+        },
+      },
+      409
+    );
+  }
+
+  const userId = newId();
+  const credId = newId();
+  const orgId = newId();
+  const memberId = newId();
+  const profileId = newId();
+  const sessionId = newId();
+
+  const orgName = body.organizationName?.trim() || `${displayName} ${isAdvertiser ? "Advertising" : "Media"}`;
+  const slugBase = orgName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "org";
+  const slug = `${slugBase}-${newId().slice(0, 6)}`;
+
+  const { hash, algorithm } = await hashPassword(password);
+  const ip = c.req.header("cf-connecting-ip") ?? c.req.header("x-forwarded-for") ?? null;
+  const ua = c.req.header("user-agent") ?? null;
+
+  try {
+    const batchOps = [
+      c.env.DB.prepare(
+        `INSERT INTO users (id, email, email_verified_at, display_name, status)
+         VALUES (?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now'), ?, 'ACTIVE')`
+      ).bind(userId, email, displayName),
+
+      c.env.DB.prepare(
+        `INSERT INTO user_credentials (id, user_id, password_hash, hash_algorithm)
+         VALUES (?, ?, ?, ?)`
+      ).bind(credId, userId, hash, algorithm),
+
+      c.env.DB.prepare(
+        `INSERT INTO organizations (id, type, name, slug, status)
+         VALUES (?, ?, ?, ?, 'ACTIVE')`
+      ).bind(orgId, orgType, orgName, slug),
+
+      c.env.DB.prepare(
+        `INSERT INTO organization_members (id, organization_id, user_id, role_id, status, joined_at)
+         VALUES (?, ?, ?, ?, 'ACTIVE', strftime('%Y-%m-%dT%H:%M:%fZ','now'))`
+      ).bind(memberId, orgId, userId, roleId),
+    ];
+
+    if (isAdvertiser) {
+      batchOps.push(
+        c.env.DB.prepare(
+          `INSERT INTO advertiser_profiles (id, organization_id, status) VALUES (?, ?, 'ACTIVE')`
+        ).bind(profileId, orgId)
+      );
+    } else {
+      batchOps.push(
+        c.env.DB.prepare(
+          `INSERT INTO affiliate_profiles (id, organization_id, status) VALUES (?, ?, 'ACTIVE')`
+        ).bind(profileId, orgId)
+      );
+    }
+
+    await c.env.DB.batch(batchOps);
+
+    // Issue initial session
+    const rawToken = randomToken();
+    const tokenHash = await sha256Hex(rawToken);
+    const expiresAt = new Date(Date.now() + SESSION_TTL_MS).toISOString();
+
+    await c.env.DB.prepare(
+      `INSERT INTO sessions (id, user_id, token_hash, expires_at, ip_address, user_agent)
+       VALUES (?, ?, ?, ?, ?, ?)`
+    ).bind(sessionId, userId, tokenHash, expiresAt, ip, ua).run();
+
+    try {
+      await c.env.DB.prepare(
+        `INSERT INTO auth_events (id, user_id, event_type, session_id, ip_address, user_agent, request_id)
+         VALUES (?, ?, 'REGISTER_SUCCEEDED', ?, ?, ?, ?)`
+      ).bind(newId(), userId, sessionId, ip, ua, correlationId).run();
+    } catch {
+      /* non-fatal */
+    }
+
+    return c.json(
+      {
+        data: {
+          token: rawToken,
+          expiresAt,
+          user: {
+            id: userId,
+            email,
+            displayName,
+            accountType: rawType,
+            organizationId: orgId,
+          },
+          organization: {
+            id: orgId,
+            name: orgName,
+            type: orgType,
+            slug,
+          },
+        },
+        correlationId,
+      },
+      201
+    );
+  } catch (err) {
+    console.error(`[${correlationId}] Registration failed:`, err);
+    return c.json(
+      {
+        error: {
+          code: "registration_failed",
+          message: "Unable to complete registration. Please try again.",
+          correlationId,
+        },
+      },
+      500
+    );
+  }
+});
+

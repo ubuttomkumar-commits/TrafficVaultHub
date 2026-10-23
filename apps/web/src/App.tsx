@@ -17,6 +17,8 @@ import { TrackingLinksPage } from "./pages/TrackingLinksPage";
 import { SmartlinksPage } from "./pages/SmartlinksPage";
 import { DisputesPage } from "./pages/DisputesPage";
 import { IntegrityPage } from "./pages/IntegrityPage";
+import { RegisterPage } from "./pages/RegisterPage";
+import { AdminDashboardPage } from "./pages/AdminDashboardPage";
 
 function AppRoutes() {
   const location = useLocation();
@@ -39,6 +41,9 @@ function AppRoutes() {
         <Route path="/disputes" element={<DisputesPage />} />
         <Route path="/integrity" element={<IntegrityPage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<RegisterPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/admin" element={<AdminDashboardPage />} />
         <Route path="/earnings" element={<EarningsPage />} />
         <Route path="/conversion-confidence" element={<ConversionConfidencePage />} />
         <Route path="/offer-caps" element={<OfferCapsPage />} />

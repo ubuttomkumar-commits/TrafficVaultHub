@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { apiUrl } from "../lib/api";
 import styles from "./LoginPage.module.css";
 
@@ -73,6 +73,9 @@ export function LoginPage() {
         <button type="submit" disabled={loading}>
           {loading ? "Signing in…" : "Sign in"}
         </button>
+        <p className="muted" style={{ marginTop: "1rem", fontSize: "0.85rem" }}>
+          New partner? <Link to="/signup" style={{ color: "#22d3ee", textDecoration: "underline" }}>Create an account</Link>
+        </p>
       </form>
     </div>
   );

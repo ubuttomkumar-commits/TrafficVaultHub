@@ -52,7 +52,7 @@ export function LandingPage() {
             <Link to="/login" className={styles.loginBtn}>
               Login
             </Link>
-            <Link to="/login" className={styles.getStartedBtn}>
+            <Link to="/signup" className={styles.getStartedBtn}>
               Get Started
             </Link>
           </div>
@@ -77,10 +77,10 @@ export function LandingPage() {
                 and manage affiliate campaigns with stronger financial and fraud controls.
               </p>
               <div className={styles.heroCtas}>
-                <Link to="/login" className={styles.ctaPublisher}>
+                <Link to="/signup?role=publisher" className={styles.ctaPublisher}>
                   Start as Publisher →
                 </Link>
-                <Link to="/campaign-studio" className={styles.ctaAdvertiser}>
+                <Link to="/signup?role=advertiser" className={styles.ctaAdvertiser}>
                   Start as Advertiser →
                 </Link>
               </div>

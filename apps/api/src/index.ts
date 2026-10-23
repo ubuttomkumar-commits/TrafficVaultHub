@@ -26,6 +26,7 @@ import { integrityRoutes } from "./routes/integrity";
 import { smartlinkRoutes, smartlinkPublicRoutes } from "./routes/smartlinks";
 import { payoutRoutes } from "./routes/payouts";
 import { evidenceRoutes } from "./routes/evidence";
+import { adminRoutes } from "./routes/admin";
 import { errorHandler } from "./middleware/error-handler";
 import { correlationId } from "./middleware/correlation-id";
 import { optionalAuth } from "./middleware/auth";
@@ -87,6 +88,7 @@ api.route("/smartlinks", smartlinkRoutes);
 api.route("/sl", smartlinkPublicRoutes);
 api.route("/payouts", payoutRoutes);
 api.route("/evidence", evidenceRoutes);
+api.route("/admin", adminRoutes);
 
 app.route(API_PREFIX, api);
 
