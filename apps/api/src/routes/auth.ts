@@ -10,6 +10,7 @@ import { hashPassword, verifyPassword } from "../lib/password";
 import { sha256Hex } from "../lib/crypto";
 import { requireAuth } from "../middleware/auth";
 import { rateLimit } from "../middleware/rate-limit";
+import { createAndSendOtp, verifyEmailOtp } from "../lib/email-otp";
 
 export const authRoutes = new Hono<{ Bindings: Env }>();
 
@@ -572,6 +573,18 @@ authRoutes.post("/register", rateLimit({ keyPrefix: "register", limit: 10, windo
       /* non-fatal */
     }
 
+    try {
+      await createAndSendOtp(c.env.DB, c.env, {
+        email,
+        userId,
+        ip,
+        ua,
+        correlationId,
+      });
+    } catch {
+      /* non-fatal */
+    }
+
     return c.json(
       {
         data: {
@@ -608,5 +621,156 @@ authRoutes.post("/register", rateLimit({ keyPrefix: "register", limit: 10, windo
       500
     );
   }
+});
+
+/**
+ * POST /api/v1/auth/send-email-otp
+ * Dispatches a cryptographically secure 6-digit OTP to the recipient email.
+ * Rate limited to max 3 requests per 15 minutes.
+ */
+authRoutes.post("/send-email-otp", rateLimit({ keyPrefix: "send_otp", limit: 10, windowSeconds: 60 }), async (c) => {
+  const correlationId = c.get("correlationId");
+  let body: { email?: string; userId?: string; applicationId?: string };
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: { code: "invalid_json", message: "Valid JSON body required", correlationId } }, 400);
+  }
+
+  const email = body.email?.trim().toLowerCase();
+  if (!email || !email.includes("@")) {
+    return c.json({ error: { code: "invalid_email", message: "Valid email address required", correlationId } }, 400);
+  }
+
+  const ip = c.req.header("cf-connecting-ip") ?? c.req.header("x-forwarded-for") ?? null;
+  const ua = c.req.header("user-agent") ?? null;
+
+  const result = await createAndSendOtp(c.env.DB, c.env, {
+    email,
+    userId: body.userId,
+    applicationId: body.applicationId,
+    ip,
+    ua,
+    correlationId,
+  });
+
+  if (!result.success) {
+    return c.json({ error: { code: result.code, message: result.message, correlationId } }, result.httpStatus as any);
+  }
+
+  return c.json({
+    data: {
+      sent: true,
+      email: result.email,
+      expiresInMinutes: result.expiresInMinutes,
+      provider: result.provider,
+      message: `A 6-digit verification code has been dispatched to ${result.email}. Valid for ${result.expiresInMinutes} minutes.`,
+    },
+    correlationId,
+  });
+});
+
+/**
+ * POST /api/v1/auth/resend-email-otp
+ * Dedicated endpoint for resending OTP with rate limits.
+ */
+authRoutes.post("/resend-email-otp", rateLimit({ keyPrefix: "resend_otp", limit: 10, windowSeconds: 60 }), async (c) => {
+  const correlationId = c.get("correlationId");
+  let body: { email?: string; userId?: string; applicationId?: string };
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: { code: "invalid_json", message: "Valid JSON body required", correlationId } }, 400);
+  }
+
+  const email = body.email?.trim().toLowerCase();
+  if (!email || !email.includes("@")) {
+    return c.json({ error: { code: "invalid_email", message: "Valid email address required", correlationId } }, 400);
+  }
+
+  const ip = c.req.header("cf-connecting-ip") ?? c.req.header("x-forwarded-for") ?? null;
+  const ua = c.req.header("user-agent") ?? null;
+
+  const result = await createAndSendOtp(c.env.DB, c.env, {
+    email,
+    userId: body.userId,
+    applicationId: body.applicationId,
+    ip,
+    ua,
+    correlationId,
+  });
+
+  if (!result.success) {
+    return c.json({ error: { code: result.code, message: result.message, correlationId } }, result.httpStatus as any);
+  }
+
+  return c.json({
+    data: {
+      sent: true,
+      email: result.email,
+      expiresInMinutes: result.expiresInMinutes,
+      provider: result.provider,
+      message: `A fresh verification code has been dispatched to ${result.email}.`,
+    },
+    correlationId,
+  });
+});
+
+/**
+ * POST /api/v1/auth/verify-email-otp
+ * Validates 6-digit OTP with constant-time comparison, updates attempt counter,
+ * and sets email_verified = true upon match.
+ */
+authRoutes.post("/verify-email-otp", rateLimit({ keyPrefix: "verify_otp", limit: 20, windowSeconds: 60 }), async (c) => {
+  const correlationId = c.get("correlationId");
+  let body: { email?: string; code?: string; applicationId?: string };
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: { code: "invalid_json", message: "Valid JSON body required", correlationId } }, 400);
+  }
+
+  const email = body.email?.trim().toLowerCase();
+  const code = body.code?.trim();
+
+  if (!email || !code) {
+    return c.json({ error: { code: "validation_error", message: "Email and 6-digit code are required", correlationId } }, 400);
+  }
+
+  const ip = c.req.header("cf-connecting-ip") ?? c.req.header("x-forwarded-for") ?? null;
+  const ua = c.req.header("user-agent") ?? null;
+
+  const result = await verifyEmailOtp(c.env.DB, {
+    email,
+    code,
+    applicationId: body.applicationId,
+    ip,
+    ua,
+    correlationId,
+  });
+
+  if (!result.success) {
+    return c.json(
+      {
+        error: {
+          code: result.code,
+          message: result.message,
+          attemptsRemaining: result.attemptsRemaining,
+          correlationId,
+        },
+      },
+      result.httpStatus as any
+    );
+  }
+
+  return c.json({
+    data: {
+      verified: true,
+      email: result.email,
+      applicationId: result.applicationId,
+      message: "Email address successfully verified.",
+    },
+    correlationId,
+  });
 });
 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { apiUrl } from "../lib/api";
+import { EmailOtpVerification } from "../components/auth/EmailOtpVerification";
 
 type Dimension = {
   id: string;
@@ -52,6 +53,7 @@ export function VerificationStatusPage() {
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
+  const [showEmailOtpModal, setShowEmailOtpModal] = useState(false);
 
   async function loadStatus() {
     setLoading(true);
@@ -192,6 +194,51 @@ export function VerificationStatusPage() {
       {error && (
         <div style={{ background: "rgba(248, 113, 113, 0.1)", border: "1px solid var(--color-danger)", padding: "1rem", borderRadius: "var(--radius-md)", color: "#fca5a5", marginBottom: "1.5rem" }}>
           {error}
+        </div>
+      )}
+
+      {/* Unverified Email Warning & Modal Trigger */}
+      {application && !application.emailVerified && (
+        <div style={{ background: "rgba(251, 191, 36, 0.12)", border: "1px solid var(--color-warning)", borderRadius: "var(--radius-md)", padding: "1.25rem", marginBottom: "1.5rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
+          <div>
+            <h3 style={{ margin: "0 0 0.25rem", color: "#fef08a", fontSize: "1.05rem" }}>⚠️ Action Required: Email Unverified</h3>
+            <p style={{ margin: 0, color: "var(--color-text-secondary)", fontSize: "0.88rem" }}>
+              A 6-digit confirmation code was sent to <strong>{application.email}</strong>. Confirming your code elevates your trust score and unlocks offers.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowEmailOtpModal(true)}
+            style={{
+              background: "linear-gradient(135deg, #06b6d4, #3b82f6)",
+              color: "#05070d",
+              border: "none",
+              padding: "0.55rem 1.25rem",
+              borderRadius: "var(--radius-sm)",
+              fontWeight: 700,
+              cursor: "pointer",
+              fontSize: "0.88rem",
+            }}
+          >
+            Enter 6-Digit OTP Code ✉️
+          </button>
+        </div>
+      )}
+
+      {/* Email OTP Modal */}
+      {showEmailOtpModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
+          <div style={{ maxWidth: "28rem", width: "100%" }}>
+            <EmailOtpVerification
+              email={application?.email || ""}
+              applicationId={application?.id}
+              onVerified={() => {
+                setShowEmailOtpModal(false);
+                void loadStatus();
+              }}
+              onCancel={() => setShowEmailOtpModal(false)}
+            />
+          </div>
         </div>
       )}
 

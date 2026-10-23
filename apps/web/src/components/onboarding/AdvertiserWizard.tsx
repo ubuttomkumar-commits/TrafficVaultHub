@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { apiUrl } from "../../lib/api";
+import { EmailOtpVerification } from "../auth/EmailOtpVerification";
 import styles from "./OnboardingStyles.module.css";
 
 const VERTICAL_OPTIONS = [
@@ -65,6 +66,7 @@ export function AdvertiserWizard() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submittedData, setSubmittedData] = useState<any | null>(null);
+  const [emailVerified, setEmailVerified] = useState(false);
 
   function toggleVertical(v: string) {
     if (selectedVerticals.includes(v)) {
@@ -228,6 +230,26 @@ export function AdvertiserWizard() {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  if (submittedData && !emailVerified) {
+    return (
+      <div className={styles.wizardContainer}>
+        <EmailOtpVerification
+          email={email}
+          applicationId={submittedData.applicationId}
+          title="Verify Corporate Work Email"
+          subtitle={
+            <>
+              An automated 6-digit verification code has been dispatched to{" "}
+              <strong style={{ color: "var(--color-accent-cyan)" }}>{email}</strong>.
+              Enter it below to confirm your corporate domain authority and KYB status.
+            </>
+          }
+          onVerified={() => setEmailVerified(true)}
+        />
+      </div>
+    );
   }
 
   if (submittedData) {

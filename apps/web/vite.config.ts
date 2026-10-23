@@ -362,6 +362,63 @@ function devMockApiPlugin(): Plugin {
           });
         }
 
+        // Email OTP: Send / Resend
+        if ((pathname === "/api/v1/auth/send-email-otp" || pathname === "/api/v1/auth/resend-email-otp") && req.method === "POST") {
+          const body = await readRequestBody(req);
+          const email = (body.email || "").trim().toLowerCase();
+          if (!email || !email.includes("@")) {
+            return sendJson(res, 400, { error: { code: "invalid_email", message: "Valid email address required" } });
+          }
+          const plainCode = Math.floor(100000 + Math.random() * 900000).toString();
+          console.log(`\n======================================================`);
+          console.log(`[TRAFFICVAULTHUB LOCAL DEV OTP] Recipient: ${email}`);
+          console.log(`VERIFICATION CODE: ${plainCode}`);
+          console.log(`EXPIRES IN: 10 minutes`);
+          console.log(`======================================================\n`);
+          return sendJson(res, 200, {
+            data: {
+              sent: true,
+              email,
+              expiresInMinutes: 10,
+              provider: "dev-console",
+              message: `A 6-digit verification code has been dispatched to ${email}.`,
+              devCodeHint: plainCode // Provided for convenient local testing
+            }
+          });
+        }
+
+        // Email OTP: Verify
+        if (pathname === "/api/v1/auth/verify-email-otp" && req.method === "POST") {
+          const body = await readRequestBody(req);
+          const email = (body.email || "").trim().toLowerCase();
+          const code = (body.code || "").trim();
+          if (!email || !code) {
+            return sendJson(res, 400, { error: { code: "validation_error", message: "Email and 6-digit code required" } });
+          }
+          if (code.length !== 6 || !/^\d{6}$/.test(code)) {
+            return sendJson(res, 400, { error: { code: "invalid_format", message: "Code must be 6 numeric digits" } });
+          }
+
+          // Mark mock application & dimensions verified
+          const found = mockApplications.find(a => (body.applicationId && a.id === body.applicationId) || a.email.toLowerCase() === email);
+          if (found) {
+            found.email_verified = 1;
+            if (mockDimensions[found.id]) {
+              const match = mockDimensions[found.id].find(d => d.dimension === "EMAIL");
+              if (match) { match.stage = "VERIFIED"; match.status = "PASSED"; }
+            }
+          }
+
+          return sendJson(res, 200, {
+            data: {
+              verified: true,
+              email,
+              applicationId: found ? found.id : body.applicationId,
+              message: "Email address successfully verified."
+            }
+          });
+        }
+
         // Admin overview
         if (pathname === "/api/v1/admin/overview") {
           return sendJson(res, 200, {

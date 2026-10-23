@@ -8,6 +8,7 @@ import { Hono } from "hono";
 import type { Env } from "../env";
 import { isPlatformOperator } from "../lib/rbac";
 import { writeAuditEvent } from "../lib/audit";
+import { createAndSendOtp, verifyEmailOtp } from "../lib/email-otp";
 
 export const onboardingRoutes = new Hono<{ Bindings: Env }>();
 
@@ -314,6 +315,21 @@ onboardingRoutes.post("/publisher", async (c) => {
       .bind(crypto.randomUUID(), applicationId, now)
       .run();
 
+    // Automatically generate and dispatch secure Email OTP
+    try {
+      const ip = c.req.header("cf-connecting-ip") ?? c.req.header("x-forwarded-for") ?? null;
+      const ua = c.req.header("user-agent") ?? null;
+      await createAndSendOtp(c.env.DB, c.env, {
+        email,
+        applicationId,
+        ip,
+        ua,
+        correlationId,
+      });
+    } catch (otpErr) {
+      console.warn(`[${correlationId}] Auto email OTP dispatch notice:`, otpErr);
+    }
+
     return c.json(
       {
         data: {
@@ -493,6 +509,21 @@ onboardingRoutes.post("/advertiser", async (c) => {
     )
       .bind(crypto.randomUUID(), applicationId, now)
       .run();
+
+    // Automatically generate and dispatch secure Email OTP
+    try {
+      const ip = c.req.header("cf-connecting-ip") ?? c.req.header("x-forwarded-for") ?? null;
+      const ua = c.req.header("user-agent") ?? null;
+      await createAndSendOtp(c.env.DB, c.env, {
+        email,
+        applicationId,
+        ip,
+        ua,
+        correlationId,
+      });
+    } catch (otpErr) {
+      console.warn(`[${correlationId}] Auto advertiser email OTP dispatch notice:`, otpErr);
+    }
 
     return c.json(
       {
@@ -725,38 +756,59 @@ onboardingRoutes.get("/status", async (c) => {
 // ---------------------------------------------------------------------------
 onboardingRoutes.post("/verify-email", async (c) => {
   const correlationId = c.get("correlationId");
-  const { applicationId, code } = await c.req.json().catch(() => ({}));
+  const { applicationId, email, code } = await c.req.json().catch(() => ({}));
 
-  if (!applicationId || !code) {
+  if (!code || (!applicationId && !email)) {
     return c.json(
-      { error: { code: "validation_error", message: "applicationId and 6-digit code required", correlationId } },
+      { error: { code: "validation_error", message: "Verification code and either applicationId or email are required", correlationId } },
       400
     );
   }
 
-  const now = new Date().toISOString();
-  await c.env.DB.prepare(
-    `UPDATE partner_applications SET email_verified = 1, updated_at = ? WHERE id = ?`
-  )
-    .bind(now, applicationId)
-    .run();
+  let lookupEmail = email?.trim().toLowerCase();
+  if (!lookupEmail && applicationId) {
+    try {
+      const app = await c.env.DB.prepare(`SELECT email FROM partner_applications WHERE id = ?`).bind(applicationId).first<{ email: string }>();
+      lookupEmail = app?.email?.toLowerCase();
+    } catch {
+      /* non-fatal */
+    }
+  }
 
-  await c.env.DB.prepare(
-    `UPDATE verification_dimensions
-     SET stage = 'VERIFIED', status = 'PASSED', verified_at = ?, updated_at = ?
-     WHERE application_id = ? AND dimension = 'EMAIL'`
-  )
-    .bind(now, now, applicationId)
-    .run();
+  if (!lookupEmail) {
+    return c.json(
+      { error: { code: "application_not_found", message: "Application or email record not found", correlationId } },
+      404
+    );
+  }
 
-  await c.env.DB.prepare(
-    `INSERT INTO review_audit_log (id, application_id, actor_id, action, notes, created_at)
-     VALUES (?, ?, 'applicant', 'EMAIL_VERIFIED', 'Email OTP confirmation passed', ?)`
-  )
-    .bind(crypto.randomUUID(), applicationId, now)
-    .run();
+  const ip = c.req.header("cf-connecting-ip") ?? c.req.header("x-forwarded-for") ?? null;
+  const ua = c.req.header("user-agent") ?? null;
 
-  return c.json({ data: { ok: true, emailVerified: true }, correlationId });
+  const result = await verifyEmailOtp(c.env.DB, {
+    email: lookupEmail,
+    code: String(code).trim(),
+    applicationId,
+    ip,
+    ua,
+    correlationId,
+  });
+
+  if (!result.success) {
+    return c.json(
+      {
+        error: {
+          code: result.code,
+          message: result.message,
+          attemptsRemaining: result.attemptsRemaining,
+          correlationId,
+        },
+      },
+      result.httpStatus as any
+    );
+  }
+
+  return c.json({ data: { ok: true, emailVerified: true, email: result.email }, correlationId });
 });
 
 onboardingRoutes.post("/verify-phone", async (c) => {
@@ -803,7 +855,7 @@ onboardingRoutes.get("/admin/applications", async (c) => {
   const statusFilter = c.req.query("status")?.trim();
   const typeFilter = c.req.query("accountType")?.trim();
 
-  let query = `SELECT id, account_type, sub_type, status, email, phone, contact_method, contact_handle,
+  let query = `SELECT id, account_type, sub_type, status, email, email_verified, phone, phone_verified, contact_method, contact_handle,
                       first_name, last_name, company_name, country, risk_score, risk_flags,
                       traffic_sources, created_at, updated_at
                FROM partner_applications WHERE 1=1`;

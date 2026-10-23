@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { apiUrl } from "../../lib/api";
+import { EmailOtpVerification } from "../auth/EmailOtpVerification";
 import styles from "./OnboardingStyles.module.css";
 
 const TRAFFIC_SOURCE_OPTIONS = [
@@ -319,8 +320,27 @@ export function PublisherWizard() {
   }
 
   // ---------------------------------------------------------------------------
-  // SUCCESS / PENDING REVIEW STATE
+  // SUCCESS / EMAIL OTP & PENDING REVIEW STATE
   // ---------------------------------------------------------------------------
+  if (submittedData && !emailVerified) {
+    return (
+      <div className={styles.wizardContainer}>
+        <EmailOtpVerification
+          email={email}
+          applicationId={submittedData.applicationId}
+          onVerified={() => setEmailVerified(true)}
+          subtitle={
+            <>
+              An automated 6-digit verification code has been dispatched to{" "}
+              <strong style={{ color: "var(--color-accent-cyan)" }}>{email}</strong>.
+              Enter it below to confirm your contact authenticity and unlock your compliance docket.
+            </>
+          }
+        />
+      </div>
+    );
+  }
+
   if (submittedData) {
     return (
       <div className={styles.wizardContainer}>

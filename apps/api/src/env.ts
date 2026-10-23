@@ -28,4 +28,8 @@ export type Env = {
   // Secrets (injected at runtime)
   SESSION_SECRET?: string;
   TURNSTILE_SECRET_KEY?: string;
+
+  // Transactional Email Service (Resend)
+  RESEND_API_KEY?: string;
+  EMAIL_FROM?: string;
 };
