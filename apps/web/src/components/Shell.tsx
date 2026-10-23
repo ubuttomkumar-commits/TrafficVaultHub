@@ -54,6 +54,9 @@ export function Shell({ children }: { children: ReactNode }) {
     navigate("/login");
   }
 
+  const isAdminRoute = location.pathname.startsWith("/admin");
+  const isSuperAdmin = userEmail?.toLowerCase().includes("admin");
+
   return (
     <div className={styles.shell}>
       <a href="#main-content" className={styles.skipLink}>Skip to content</a>
@@ -67,22 +70,23 @@ export function Shell({ children }: { children: ReactNode }) {
         </div>
         <nav className={styles.nav} aria-label="Primary">
           {NAV.filter((item) => !(token && (item.to === "/login" || item.to === "/signup"))).map((item) => {
-            const active = location.pathname === item.to;
+            const active = location.pathname === item.to || (item.to === "/admin" && isAdminRoute);
+            const isAdminLink = item.to === "/admin";
             return (
               <Link
                 key={item.to}
                 to={item.to}
-                className={active ? styles.navLinkActive : styles.navLink}
+                className={`${active ? styles.navLinkActive : styles.navLink} ${isAdminLink ? styles.adminNavLink : ""}`}
                 aria-current={active ? "page" : undefined}
               >
-                {item.label}
+                {isAdminLink ? "Admin Console" : item.label}
               </Link>
             );
           })}
-          {token && (
+          {token ? (
             <div className={styles.authWidget}>
-              <span className={styles.userBadge} title={userEmail ?? "Logged in"}>
-                {userEmail}
+              <span className={`${styles.userBadge} ${isSuperAdmin ? styles.userBadgeAdmin : ""}`} title={userEmail ?? "Logged in"}>
+                {isSuperAdmin ? "Operator: " : ""}{userEmail}
               </span>
               <button
                 type="button"
@@ -93,10 +97,16 @@ export function Shell({ children }: { children: ReactNode }) {
                 Sign out
               </button>
             </div>
+          ) : (
+            <div className={styles.authWidget}>
+              <Link to="/login" className={styles.signInBtn}>
+                Sign in
+              </Link>
+            </div>
           )}
         </nav>
       </header>
-      <main id="main-content" className={styles.main} tabIndex={-1}>{children}</main>
+      <main id="main-content" className={isAdminRoute ? styles.mainWide : styles.main} tabIndex={-1}>{children}</main>
       <footer className={styles.footer}>
         <p className="muted">
           Every Click Accounted For · Every Decision Explained · Every Valid

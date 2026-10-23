@@ -125,11 +125,11 @@ export function AdminApplicationsPage() {
     return () => clearTimeout(handler);
   }, [search]);
 
-  // Top summary counters based on all currently loaded or unfiltered applications
+  // Top summary counters based on all loaded applications
   const queueCounters = useMemo(() => {
     const total = applications.length;
     const pending = applications.filter((a) => a.status === "PENDING_REVIEW").length;
-    const highRisk = applications.filter((a) => (a.risk_score || 0) >= 25).length;
+    const highRisk = applications.filter((a) => (a.risk_score || 0) >= 20).length;
     const docsReq = applications.filter((a) => a.status === "DOCS_REQUESTED").length;
     const approved = applications.filter((a) => a.status === "APPROVED" || a.status === "PROBATIONARY_APPROVED").length;
     const rejected = applications.filter((a) => a.status === "REJECTED").length;
@@ -195,7 +195,6 @@ export function AdminApplicationsPage() {
         }
       );
       if (res.ok) {
-        // Refresh dossier
         void openDetail(selectedAppId);
       }
     } catch {
@@ -220,7 +219,7 @@ export function AdminApplicationsPage() {
         payload.conditionalCaps = {
           dailyClickCap: `${probationaryCap} clicks / day`,
           reserveHoldDays: `${reserveDays} days reserve hold`,
-          allowedVerticals: "Standard categories only (Restricted gated)",
+          allowedVerticals: "Standard categories only (Restricted categories gated)",
         };
       } else if (decisionType === "SCHEDULE_CALL") {
         payload.interviewDetails = {
@@ -244,7 +243,7 @@ export function AdminApplicationsPage() {
       const json = await res.json();
       if (!res.ok) throw new Error(json?.error?.message ?? "Decision failed");
 
-      setDecisionMsg(`Decision executed: ${json.data?.status}`);
+      setDecisionMsg(`Decision recorded: ${json.data?.status}`);
       setShowDecisionModal(false);
       void loadApplications();
       void openDetail(selectedAppId);
@@ -305,21 +304,28 @@ export function AdminApplicationsPage() {
 
   return (
     <div className={styles.page}>
+      {/* Breadcrumbs */}
+      <div className={styles.breadcrumbs}>
+        <Link to="/admin" className={styles.breadcrumbLink}>Platform Operations</Link>
+        <span>/</span>
+        <span className={styles.breadcrumbCurrent}>Review Queue</span>
+      </div>
+
       {/* Header */}
       <div className={styles.headerRow}>
         <div className={styles.titleGroup}>
           <h1>
-            <span>⚖️</span> Partner KYC / KYB Review Queue
-            <span className={styles.titleBadge}>Multi-Dimensional Verification</span>
+            Partner KYC / KYB Review Queue
+            <span className={styles.titleBadge}>Verification Desk</span>
           </h1>
           <p className={styles.subtitle}>
-            Zero auto-approvals. Anti-fraud telemetry, traffic methodology scrutiny, and immutable audit trail.
+            Multi-dimensional verification gate with zero auto-approvals. Automated anomaly telemetry, acquisition scrutiny, and immutable audit logs.
           </p>
         </div>
 
         <div className={styles.headerActions}>
           <Link to="/admin" className={styles.btnSecondary}>
-            ← Admin Dashboard
+            ← Operations Cockpit
           </Link>
           <button
             type="button"
@@ -327,20 +333,23 @@ export function AdminApplicationsPage() {
             className={styles.btnPrimary}
             title="Reload applications queue"
           >
-            <span>⟳</span> Refresh Queue
+            <span>↻</span>
+            <span>Refresh Queue</span>
           </button>
         </div>
       </div>
 
-      {/* Top summary counter tiles */}
+      {/* Top Summary Counter Strip */}
       <div className={styles.counterGrid}>
         <div
           className={`${styles.counterTile} ${statusFilter === "ALL" && riskFilter === "ALL" ? styles.counterTileActive : ""}`}
           onClick={() => { setStatusFilter("ALL"); setRiskFilter("ALL"); }}
+          role="button"
+          tabIndex={0}
         >
           <div className={styles.counterLabel}>
             <span>Total Queue</span>
-            <span>📋</span>
+            <span>All</span>
           </div>
           <div className={styles.counterValue}>{queueCounters.total}</div>
         </div>
@@ -348,12 +357,14 @@ export function AdminApplicationsPage() {
         <div
           className={`${styles.counterTile} ${statusFilter === "PENDING_REVIEW" ? styles.counterTileActive : ""}`}
           onClick={() => { setStatusFilter("PENDING_REVIEW"); setRiskFilter("ALL"); }}
+          role="button"
+          tabIndex={0}
         >
           <div className={styles.counterLabel}>
             <span>Pending Review</span>
-            <span style={{ color: "#fbbf24" }}>⏳</span>
+            <span style={{ color: "var(--color-warning)" }}>Pending</span>
           </div>
-          <div className={styles.counterValue} style={{ color: "#fde68a" }}>
+          <div className={styles.counterValue} style={{ color: "var(--color-warning)" }}>
             {queueCounters.pending}
           </div>
         </div>
@@ -361,12 +372,14 @@ export function AdminApplicationsPage() {
         <div
           className={`${styles.counterTile} ${riskFilter === "HIGH" ? styles.counterTileActive : ""}`}
           onClick={() => { setRiskFilter("HIGH"); }}
+          role="button"
+          tabIndex={0}
         >
           <div className={styles.counterLabel}>
             <span>High Risk Flagged</span>
-            <span style={{ color: "#f87171" }}>🚨</span>
+            <span style={{ color: "var(--color-danger)" }}>Alert</span>
           </div>
-          <div className={styles.counterValue} style={{ color: "#fca5a5" }}>
+          <div className={styles.counterValue} style={{ color: "var(--color-danger)" }}>
             {queueCounters.highRisk}
           </div>
         </div>
@@ -374,10 +387,12 @@ export function AdminApplicationsPage() {
         <div
           className={`${styles.counterTile} ${statusFilter === "DOCS_REQUESTED" ? styles.counterTileActive : ""}`}
           onClick={() => { setStatusFilter("DOCS_REQUESTED"); setRiskFilter("ALL"); }}
+          role="button"
+          tabIndex={0}
         >
           <div className={styles.counterLabel}>
             <span>Docs Requested</span>
-            <span style={{ color: "#fbbf24" }}>📄</span>
+            <span style={{ color: "#fbbf24" }}>Hold</span>
           </div>
           <div className={styles.counterValue} style={{ color: "#fbbf24" }}>
             {queueCounters.docsReq}
@@ -387,12 +402,14 @@ export function AdminApplicationsPage() {
         <div
           className={`${styles.counterTile} ${statusFilter === "APPROVED" ? styles.counterTileActive : ""}`}
           onClick={() => { setStatusFilter("APPROVED"); setRiskFilter("ALL"); }}
+          role="button"
+          tabIndex={0}
         >
           <div className={styles.counterLabel}>
             <span>Approved / Live</span>
-            <span style={{ color: "#34d399" }}>✓</span>
+            <span style={{ color: "var(--color-success)" }}>Passed</span>
           </div>
-          <div className={styles.counterValue} style={{ color: "#a7f3d0" }}>
+          <div className={styles.counterValue} style={{ color: "var(--color-success)" }}>
             {queueCounters.approved}
           </div>
         </div>
@@ -400,12 +417,14 @@ export function AdminApplicationsPage() {
         <div
           className={`${styles.counterTile} ${statusFilter === "REJECTED" ? styles.counterTileActive : ""}`}
           onClick={() => { setStatusFilter("REJECTED"); setRiskFilter("ALL"); }}
+          role="button"
+          tabIndex={0}
         >
           <div className={styles.counterLabel}>
             <span>Rejected</span>
-            <span style={{ color: "#f87171" }}>✕</span>
+            <span style={{ color: "var(--color-danger)" }}>Declined</span>
           </div>
-          <div className={styles.counterValue} style={{ color: "#f87171" }}>
+          <div className={styles.counterValue} style={{ color: "var(--color-danger)" }}>
             {queueCounters.rejected}
           </div>
         </div>
@@ -419,9 +438,10 @@ export function AdminApplicationsPage() {
             <input
               type="text"
               className={styles.searchInput}
-              placeholder="Search by applicant name, company, email, or application ID..."
+              placeholder="Search applicant name, company, email, or application ID..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              aria-label="Search applications"
             />
           </div>
 
@@ -473,8 +493,8 @@ export function AdminApplicationsPage() {
               onChange={(e) => setRiskFilter(e.target.value)}
             >
               <option value="ALL">All Risk Levels</option>
-              <option value="HIGH">High Risk (Score ≥ 25)</option>
-              <option value="MEDIUM">Medium Risk (Score 10–24)</option>
+              <option value="HIGH">High Risk (Score ≥ 20)</option>
+              <option value="MEDIUM">Medium Risk (Score 10–19)</option>
               <option value="LOW">Low Risk (Score &lt; 10)</option>
             </select>
           </div>
@@ -486,9 +506,9 @@ export function AdminApplicationsPage() {
               value={emailVerifiedFilter}
               onChange={(e) => setEmailVerifiedFilter(e.target.value)}
             >
-              <option value="ALL">All Email States</option>
-              <option value="1">Verified Email Only</option>
-              <option value="0">Unverified Email Only</option>
+              <option value="ALL">All Verification States</option>
+              <option value="1">OTP Verified Only</option>
+              <option value="0">Unverified Only</option>
             </select>
           </div>
 
@@ -507,14 +527,13 @@ export function AdminApplicationsPage() {
               <option value="risk_score_ASC">Risk Score: Lowest First</option>
               <option value="created_at_DESC">Submitted: Newest First</option>
               <option value="created_at_ASC">Submitted: Oldest First</option>
-              <option value="status_ASC">Status: Alphabetical</option>
             </select>
           </div>
         </div>
 
         <div className={styles.filterMeta}>
           <span>
-            Showing <strong>{applications.length}</strong> matching partner applications
+            Showing <strong style={{ color: "#fff" }}>{applications.length}</strong> matching partner applications
           </span>
           {(search || typeFilter !== "ALL" || statusFilter !== "ALL" || riskFilter !== "ALL" || emailVerifiedFilter !== "ALL") && (
             <button type="button" className={styles.resetBtn} onClick={resetAllFilters}>
@@ -541,18 +560,17 @@ export function AdminApplicationsPage() {
                 setShowBulkModal(true);
               }}
             >
-              ✓ Bulk Approve
+              Bulk Approve
             </button>
             <button
               type="button"
-              className={styles.bulkBtnApprove}
-              style={{ borderColor: "#22d3ee", color: "#22d3ee" }}
+              className={styles.bulkBtnProbation}
               onClick={() => {
                 setBulkDecision("PROBATIONARY_APPROVE");
                 setShowBulkModal(true);
               }}
             >
-              🛡️ Bulk Probation
+              Bulk Probation
             </button>
             <button
               type="button"
@@ -562,7 +580,7 @@ export function AdminApplicationsPage() {
                 setShowBulkModal(true);
               }}
             >
-              📄 Request Docs
+              Request Docs
             </button>
             <button
               type="button"
@@ -572,12 +590,12 @@ export function AdminApplicationsPage() {
                 setShowBulkModal(true);
               }}
             >
-              ✕ Bulk Reject
+              Bulk Reject
             </button>
             <button
               type="button"
               className={styles.btnSecondary}
-              style={{ padding: "0.35rem 0.75rem", fontSize: "0.78rem" }}
+              style={{ padding: "0.38rem 0.75rem", fontSize: "0.78rem" }}
               onClick={() => setSelectedIds([])}
             >
               Clear Selection
@@ -587,8 +605,8 @@ export function AdminApplicationsPage() {
       )}
 
       {error && (
-        <div style={{ background: "rgba(248, 113, 113, 0.1)", border: "1px solid var(--color-danger)", padding: "1rem", borderRadius: "var(--radius-md)", color: "#fca5a5", marginBottom: "1.5rem" }}>
-          {error}
+        <div style={{ background: "rgba(244,63,94,0.1)", border: "1px solid rgba(244,63,94,0.3)", padding: "1rem", borderRadius: "var(--radius-sm)", color: "#fca5a5", marginBottom: "1.5rem" }}>
+          ⚠️ {error}
         </div>
       )}
 
@@ -608,7 +626,7 @@ export function AdminApplicationsPage() {
               <th className={styles.th}>Applicant / Entity</th>
               <th className={styles.th}>Partner Type</th>
               <th className={styles.th}>Review Status</th>
-              <th className={styles.th}>Contact & Email Verification</th>
+              <th className={styles.th}>Contact & OTP Verification</th>
               <th className={styles.th}>Risk Telemetry</th>
               <th className={styles.th}>Submitted</th>
               <th className={styles.th} style={{ textAlign: "right" }}>Actions</th>
@@ -616,18 +634,27 @@ export function AdminApplicationsPage() {
           </thead>
           <tbody className={styles.tbody}>
             {loading ? (
-              <tr>
-                <td colSpan={8} style={{ padding: "3rem", textAlign: "center", color: "var(--color-text-muted)" }}>
-                  <div style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
-                    <span style={{ animation: "spin 1s linear infinite" }}>⟳</span>
-                    Loading partner onboarding applications...
-                  </div>
-                </td>
-              </tr>
+              <>
+                <tr>
+                  <td colSpan={8} style={{ padding: "1rem" }}><div style={{ height: "1.2rem", background: "rgba(148,163,184,0.06)", borderRadius: 4 }} /></td>
+                </tr>
+                <tr>
+                  <td colSpan={8} style={{ padding: "1rem" }}><div style={{ height: "1.2rem", background: "rgba(148,163,184,0.06)", borderRadius: 4 }} /></td>
+                </tr>
+                <tr>
+                  <td colSpan={8} style={{ padding: "1rem" }}><div style={{ height: "1.2rem", background: "rgba(148,163,184,0.06)", borderRadius: 4 }} /></td>
+                </tr>
+              </>
             ) : applications.length === 0 ? (
               <tr>
-                <td colSpan={8} style={{ padding: "3rem", textAlign: "center", color: "var(--color-text-muted)" }}>
-                  No partner applications match the specified criteria.
+                <td colSpan={8} style={{ padding: "3.5rem 1rem", textAlign: "center", color: "var(--color-text-muted)" }}>
+                  <div style={{ fontSize: "1.5rem", marginBottom: "0.5rem" }}>📋</div>
+                  <strong style={{ display: "block", color: "var(--color-text-secondary)", marginBottom: "0.25rem" }}>
+                    No pending applications in this view
+                  </strong>
+                  <span style={{ fontSize: "0.82rem" }}>
+                    Try clearing search criteria or switching status tabs.
+                  </span>
                 </td>
               </tr>
             ) : (
@@ -663,9 +690,9 @@ export function AdminApplicationsPage() {
                         <span>{app.id}</span>
                         <button
                           type="button"
+                          className={styles.copyIdBtn}
                           onClick={() => handleCopyId(app.id)}
-                          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-accent-cyan)", fontSize: "0.7rem", padding: "0" }}
-                          title="Copy ID"
+                          title="Copy Application ID"
                         >
                           {copiedId === app.id ? "✓" : "📋"}
                         </button>
@@ -715,9 +742,9 @@ export function AdminApplicationsPage() {
                       <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
                         <span style={{ color: "#fff", fontWeight: 500 }}>{app.email}</span>
                         {app.email_verified ? (
-                          <span className={styles.emailVerifiedBadge} title="Email verified via OTP">✓ Verified</span>
+                          <span className={styles.emailVerifiedBadge} title="Email verified via cryptographic OTP">✓ OTP</span>
                         ) : (
-                          <span className={styles.emailUnverifiedBadge} title="Email unverified">✕ Unverified</span>
+                          <span className={styles.emailUnverifiedBadge} title="Email OTP pending">✕ Unverified</span>
                         )}
                       </div>
                       <div style={{ fontSize: "0.78rem", color: "var(--color-text-secondary)", marginTop: "0.15rem" }}>
@@ -729,23 +756,24 @@ export function AdminApplicationsPage() {
                       <div className={styles.riskMeter}>
                         <span
                           className={`${styles.riskScoreBadge} ${
-                            app.risk_score >= 25
+                            app.risk_score >= 20
                               ? styles.riskHigh
                               : app.risk_score >= 10
                               ? styles.riskMedium
                               : styles.riskLow
                           }`}
                         >
-                          Score: {app.risk_score}
+                          {app.risk_score >= 20 ? "High Risk: " : app.risk_score >= 10 ? "Moderate: " : "Low Risk: "}
+                          {app.risk_score}/100
                         </span>
                         {flags.slice(0, 2).map((f) => (
-                          <span key={f} className={styles.riskFlagChip}>
+                          <span key={f} className={styles.riskFlagChip} title={f}>
                             {f.replace(/_/g, " ")}
                           </span>
                         ))}
                         {flags.length > 2 && (
                           <span className={styles.riskFlagChip} title={flags.slice(2).join(", ")}>
-                            +{flags.length - 2} more
+                            +{flags.length - 2} more flags
                           </span>
                         )}
                       </div>
@@ -765,7 +793,7 @@ export function AdminApplicationsPage() {
                         onClick={() => void openDetail(app.id)}
                         className={styles.btnInspect}
                       >
-                        Inspect Dossier 🔍
+                        Review Dossier →
                       </button>
                     </td>
                   </tr>
@@ -822,7 +850,7 @@ export function AdminApplicationsPage() {
                   <span>·</span>
                   <span>
                     Email: <strong>{detail?.application?.email}</strong> (
-                    {detail?.application?.email_verified ? "✓ Verified" : "✕ Unverified"})
+                    {detail?.application?.email_verified ? "OTP Verified" : "Unverified"})
                   </span>
                   <span>·</span>
                   <span>
@@ -830,7 +858,7 @@ export function AdminApplicationsPage() {
                     <strong
                       style={{
                         color:
-                          (detail?.application?.risk_score || 0) >= 25
+                          (detail?.application?.risk_score || 0) >= 20
                             ? "#fca5a5"
                             : (detail?.application?.risk_score || 0) >= 10
                             ? "#fde68a"
@@ -849,7 +877,7 @@ export function AdminApplicationsPage() {
                   className={styles.btnPrimary}
                   onClick={() => setShowDecisionModal(true)}
                 >
-                  Execute Compliance Decision ⚖️
+                  Execute Compliance Decision
                 </button>
                 <button
                   type="button"
@@ -862,7 +890,7 @@ export function AdminApplicationsPage() {
             </div>
 
             {decisionMsg && (
-              <div style={{ background: "rgba(52, 211, 153, 0.15)", border: "1px solid var(--color-success)", color: "#a7f3d0", padding: "0.75rem 1.25rem", margin: "1rem 1.75rem 0" }}>
+              <div style={{ background: "rgba(16, 185, 129, 0.15)", border: "1px solid var(--color-success)", color: "#a7f3d0", padding: "0.75rem 1.25rem", margin: "1rem 1.75rem 0", borderRadius: "var(--radius-sm)" }}>
                 ✓ {decisionMsg}
               </div>
             )}
@@ -874,42 +902,42 @@ export function AdminApplicationsPage() {
                 className={`${styles.dossierTab} ${dossierTab === "profile" ? styles.dossierTabActive : ""}`}
                 onClick={() => setDossierTab("profile")}
               >
-                👤 Identity & Entity Profile
+                Identity & Legal Profile
               </button>
               <button
                 type="button"
                 className={`${styles.dossierTab} ${dossierTab === "methodology" ? styles.dossierTabActive : ""}`}
                 onClick={() => setDossierTab("methodology")}
               >
-                🎯 Traffic Methodology & Volume
+                Traffic Acquisition & GEOs
               </button>
               <button
                 type="button"
                 className={`${styles.dossierTab} ${dossierTab === "risk" ? styles.dossierTabActive : ""}`}
                 onClick={() => setDossierTab("risk")}
               >
-                🚨 Risk Signals & Telemetry
+                Risk Telemetry ({detail?.application?.risk_score ?? 0}/100)
               </button>
               <button
                 type="button"
                 className={`${styles.dossierTab} ${dossierTab === "matrix" ? styles.dossierTabActive : ""}`}
                 onClick={() => setDossierTab("matrix")}
               >
-                🛡️ Verification Matrix ({detail?.dimensions?.length || 0})
+                Verification Matrix ({detail?.dimensions?.length || 0})
               </button>
               <button
                 type="button"
                 className={`${styles.dossierTab} ${dossierTab === "documents" ? styles.dossierTabActive : ""}`}
                 onClick={() => setDossierTab("documents")}
               >
-                📁 Secure Document Vault ({detail?.documents?.length || 0})
+                Encrypted Vault ({detail?.documents?.length || 0})
               </button>
               <button
                 type="button"
                 className={`${styles.dossierTab} ${dossierTab === "audit" ? styles.dossierTabActive : ""}`}
                 onClick={() => setDossierTab("audit")}
               >
-                📜 Immutable Audit Ledger ({detail?.auditHistory?.length || 0})
+                Audit Trail ({detail?.auditHistory?.length || 0})
               </button>
             </div>
 
@@ -917,7 +945,7 @@ export function AdminApplicationsPage() {
             <div className={styles.dossierBody}>
               {loadingDetail ? (
                 <div style={{ padding: "3rem", textAlign: "center", color: "var(--color-text-muted)" }}>
-                  Loading comprehensive compliance dossier...
+                  Retrieving complete verification dossier...
                 </div>
               ) : !detail ? (
                 <div style={{ padding: "3rem", textAlign: "center", color: "var(--color-text-muted)" }}>
@@ -937,14 +965,14 @@ export function AdminApplicationsPage() {
                         </div>
 
                         <div className={styles.infoBlock}>
-                          <span className={styles.infoBlockLabel}>Company / Legal Entity</span>
+                          <span className={styles.infoBlockLabel}>Company / Registered Entity</span>
                           <span className={styles.infoBlockValue}>
-                            {detail.application.company_name || "Individual / Self-Employed"}
+                            {detail.application.company_name || "Sole Proprietor / Individual"}
                           </span>
                         </div>
 
                         <div className={styles.infoBlock}>
-                          <span className={styles.infoBlockLabel}>Business Reg. / Tax ID</span>
+                          <span className={styles.infoBlockLabel}>Business Reg. / Tax Identifier</span>
                           <span className={styles.infoBlockValue}>
                             {detail.application.business_reg_no || "N/A"}
                           </span>
@@ -955,19 +983,19 @@ export function AdminApplicationsPage() {
                           <span className={styles.infoBlockValue}>
                             {detail.application.email}{" "}
                             {detail.application.email_verified ? (
-                              <span style={{ color: "#34d399", fontSize: "0.78rem" }}>[OTP Confirmed]</span>
+                              <span style={{ color: "var(--color-success)", fontSize: "0.78rem" }}>[OTP Confirmed]</span>
                             ) : (
-                              <span style={{ color: "#f87171", fontSize: "0.78rem" }}>[Unverified]</span>
+                              <span style={{ color: "var(--color-danger)", fontSize: "0.78rem" }}>[Unverified]</span>
                             )}
                           </span>
                         </div>
 
                         <div className={styles.infoBlock}>
-                          <span className={styles.infoBlockLabel}>Primary Telephone</span>
+                          <span className={styles.infoBlockLabel}>Telephone Number</span>
                           <span className={styles.infoBlockValue}>
                             {detail.application.phone}{" "}
                             {detail.application.phone_verified ? (
-                              <span style={{ color: "#34d399", fontSize: "0.78rem" }}>[Verified]</span>
+                              <span style={{ color: "var(--color-success)", fontSize: "0.78rem" }}>[Verified]</span>
                             ) : (
                               <span style={{ color: "var(--color-text-muted)", fontSize: "0.78rem" }}>[Self-Declared]</span>
                             )}
@@ -975,7 +1003,7 @@ export function AdminApplicationsPage() {
                         </div>
 
                         <div className={styles.infoBlock}>
-                          <span className={styles.infoBlockLabel}>Direct Messenger Handle</span>
+                          <span className={styles.infoBlockLabel}>Messenger Handle</span>
                           <span className={styles.infoBlockValue}>
                             {detail.application.contact_method}: {detail.application.contact_handle || "None specified"}
                           </span>
@@ -989,7 +1017,7 @@ export function AdminApplicationsPage() {
                         </div>
 
                         <div className={styles.infoBlock}>
-                          <span className={styles.infoBlockLabel}>Street Address</span>
+                          <span className={styles.infoBlockLabel}>Registered Address</span>
                           <span className={styles.infoBlockValue}>
                             {detail.application.address_line1} {detail.application.postal_code}
                           </span>
@@ -997,7 +1025,7 @@ export function AdminApplicationsPage() {
 
                         {detail.application.website_url && (
                           <div className={styles.infoBlock}>
-                            <span className={styles.infoBlockLabel}>Corporate / Media Website</span>
+                            <span className={styles.infoBlockLabel}>Official Website</span>
                             <span className={styles.infoBlockValue}>
                               <a
                                 href={detail.application.website_url}
@@ -1015,7 +1043,7 @@ export function AdminApplicationsPage() {
                       {detail.application.decision_notes && (
                         <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid var(--color-border)", borderRadius: "var(--radius-sm)", padding: "1rem", marginTop: "1rem" }}>
                           <span style={{ fontSize: "0.75rem", textTransform: "uppercase", color: "var(--color-text-muted)", display: "block", marginBottom: "0.25rem" }}>
-                            Previous Reviewer Notes
+                            Previous Officer Notes
                           </span>
                           <p style={{ color: "#fff", margin: 0, fontSize: "0.88rem" }}>
                             {detail.application.decision_notes}
@@ -1031,7 +1059,7 @@ export function AdminApplicationsPage() {
                       {detail.application.traffic_description && (
                         <div>
                           <h4 style={{ margin: "0 0 0.5rem", fontSize: "0.95rem", color: "var(--color-accent-cyan)" }}>
-                            Declared Traffic Acquisition Methodology (Anti-Scam Signal)
+                            Declared Traffic Acquisition Methodology
                           </h4>
                           <div className={styles.quoteBox}>
                             "{detail.application.traffic_description}"
@@ -1050,7 +1078,7 @@ export function AdminApplicationsPage() {
                         <div className={styles.infoBlock}>
                           <span className={styles.infoBlockLabel}>Previous Affiliate Networks</span>
                           <span className={styles.infoBlockValue}>
-                            {detail.application.previous_networks || "None provided / Private Direct"}
+                            {detail.application.previous_networks || "Private Direct Advertisers"}
                           </span>
                         </div>
 
@@ -1066,20 +1094,20 @@ export function AdminApplicationsPage() {
                           <span
                             className={styles.infoBlockValue}
                             style={{
-                              color: detail.application.incentivized_traffic ? "#f87171" : "#34d399",
+                              color: detail.application.incentivized_traffic ? "var(--color-danger)" : "var(--color-success)",
                               fontWeight: 700,
                             }}
                           >
                             {detail.application.incentivized_traffic
                               ? `YES — ${detail.application.incentive_details || "Details pending"}`
-                              : "NO (Strictly Non-Incentivized)"}
+                              : "NO (Strictly Organic / Paid Acquisition)"}
                           </span>
                         </div>
 
                         <div className={styles.infoBlock}>
                           <span className={styles.infoBlockLabel}>Traffic Sources</span>
                           <span className={styles.infoBlockValue}>
-                            {detail.application.traffic_sources || "Search, Social, Native, Display"}
+                            {detail.application.traffic_sources || "Search, Social, Native"}
                           </span>
                         </div>
 
@@ -1102,10 +1130,10 @@ export function AdminApplicationsPage() {
                           <span
                             className={styles.infoBlockValue}
                             style={{
-                              color: detail.application.restricted_categories_intent ? "#fbbf24" : "var(--color-text-secondary)",
+                              color: detail.application.restricted_categories_intent ? "var(--color-warning)" : "var(--color-text-secondary)",
                             }}
                           >
-                            {detail.application.restricted_categories_intent ? "YES (Requires Compliance Gate)" : "NO (Standard Only)"}
+                            {detail.application.restricted_categories_intent ? "YES (Requires Compliance Review)" : "NO (Standard Only)"}
                           </span>
                         </div>
                       </div>
@@ -1124,13 +1152,13 @@ export function AdminApplicationsPage() {
                             style={{
                               fontSize: "2.5rem",
                               fontWeight: 800,
-                              fontFamily: "var(--font-mono, monospace)",
+                              fontFamily: "var(--font-mono)",
                               color:
-                                (detail.application.risk_score || 0) >= 25
-                                  ? "#f87171"
+                                (detail.application.risk_score || 0) >= 20
+                                  ? "var(--color-danger)"
                                   : (detail.application.risk_score || 0) >= 10
-                                  ? "#fbbf24"
-                                  : "#34d399",
+                                  ? "var(--color-warning)"
+                                  : "var(--color-success)",
                             }}
                           >
                             {detail.application.risk_score || 0}
@@ -1140,20 +1168,20 @@ export function AdminApplicationsPage() {
 
                         <div style={{ borderLeft: "1px solid var(--color-border)", paddingLeft: "1.5rem" }}>
                           <div style={{ fontSize: "0.95rem", fontWeight: 700, color: "#fff" }}>
-                            {(detail.application.risk_score || 0) >= 25
-                              ? "HIGH RISK — Escalated Due Diligence Required"
+                            {(detail.application.risk_score || 0) >= 20
+                              ? "HIGH RISK — Escalated Compliance Diligence Required"
                               : (detail.application.risk_score || 0) >= 10
                               ? "MODERATE RISK — Standard Secondary Verification"
-                              : "LOW RISK — Clean Digital Footprint"}
+                              : "LOW RISK — Clean Submission Baseline"}
                           </div>
                           <p style={{ margin: "0.25rem 0 0", fontSize: "0.85rem", color: "var(--color-text-secondary)" }}>
-                            Risk score is computed from 12 deterministic criteria including disposable domains, country risk index, anonymous proxies, and incentivized traffic disclosures.
+                            Deterministic scoring based on disposable email detection, anonymous proxy flags, traffic source consistency, and country risk index.
                           </p>
                         </div>
                       </div>
 
-                      <h4 style={{ margin: "0 0 0.75rem", fontSize: "0.95rem", color: "#fff" }}>
-                        Active Risk Flag Breakdown
+                      <h4 style={{ margin: "0 0 0.75rem", fontSize: "0.92rem", color: "#fff" }}>
+                        Active Flag Analysis
                       </h4>
 
                       {(() => {
@@ -1166,8 +1194,8 @@ export function AdminApplicationsPage() {
 
                         if (flags.length === 0) {
                           return (
-                            <div style={{ color: "#34d399", fontSize: "0.88rem", padding: "1rem", background: "rgba(52, 211, 153, 0.05)", borderRadius: "var(--radius-sm)" }}>
-                              ✓ Zero negative risk flags detected. Clean submission baseline.
+                            <div style={{ color: "var(--color-success)", fontSize: "0.88rem", padding: "1rem", background: "rgba(16, 185, 129, 0.06)", borderRadius: "var(--radius-sm)" }}>
+                              ✓ Zero negative risk flags detected. Clean profile baseline.
                             </div>
                           );
                         }
@@ -1178,17 +1206,17 @@ export function AdminApplicationsPage() {
                               <div
                                 key={flag}
                                 style={{
-                                  background: "rgba(248, 113, 113, 0.08)",
-                                  border: "1px solid rgba(248, 113, 113, 0.3)",
+                                  background: "rgba(244, 63, 94, 0.08)",
+                                  border: "1px solid rgba(244, 63, 94, 0.3)",
                                   borderRadius: "var(--radius-sm)",
                                   padding: "0.75rem 1rem",
                                 }}
                               >
                                 <strong style={{ color: "#fca5a5", fontSize: "0.85rem" }}>
-                                  🚨 {flag.replace(/_/g, " ")}
+                                  {flag.replace(/_/g, " ")}
                                 </strong>
                                 <p style={{ margin: "0.25rem 0 0", fontSize: "0.78rem", color: "var(--color-text-secondary)" }}>
-                                  Deterministic telemetry alert requiring manual review before approval.
+                                  Deterministic telemetry alert requiring explicit officer corroboration before full clearance.
                                 </p>
                               </div>
                             ))}
@@ -1201,9 +1229,9 @@ export function AdminApplicationsPage() {
                   {/* TAB 4: Verification Matrix */}
                   {dossierTab === "matrix" && (
                     <div>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-                        <p style={{ margin: 0, fontSize: "0.88rem", color: "var(--color-text-secondary)" }}>
-                          Multi-dimensional verification gate. Operators can manually elevate or reject individual dimensions.
+                      <div style={{ marginBottom: "1rem" }}>
+                        <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--color-text-secondary)" }}>
+                          Multi-dimensional verification gate. Officers can review and manually elevate or reject individual verification dimensions.
                         </p>
                       </div>
 
@@ -1218,10 +1246,10 @@ export function AdminApplicationsPage() {
                                   fontWeight: 700,
                                   color:
                                     dim.status === "PASSED"
-                                      ? "#34d399"
+                                      ? "var(--color-success)"
                                       : dim.status === "REJECTED"
-                                      ? "#f87171"
-                                      : "#fbbf24",
+                                      ? "var(--color-danger)"
+                                      : "var(--color-warning)",
                                 }}
                               >
                                 {dim.status}
@@ -1229,10 +1257,10 @@ export function AdminApplicationsPage() {
                             </div>
 
                             <div style={{ fontSize: "0.78rem", color: "var(--color-text-secondary)" }}>
-                              Current Stage: <strong style={{ color: "var(--color-accent-cyan)" }}>{dim.stage}</strong>
+                              Stage: <strong style={{ color: "var(--color-accent-cyan)" }}>{dim.stage}</strong>
                             </div>
 
-                            <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", marginTop: "0.35rem" }}>
+                            <div style={{ marginTop: "0.35rem" }}>
                               <select
                                 className={styles.dimStageSelect}
                                 value={dim.stage}
@@ -1245,8 +1273,8 @@ export function AdminApplicationsPage() {
                                 <option value="REJECTED">REJECTED</option>
                               </select>
                               {updatingDimension === dim.dimension && (
-                                <span style={{ fontSize: "0.72rem", color: "var(--color-accent-cyan)" }}>
-                                  Saving...
+                                <span style={{ fontSize: "0.72rem", color: "var(--color-accent-cyan)", display: "block", marginTop: "0.25rem" }}>
+                                  Saving update...
                                 </span>
                               )}
                             </div>
@@ -1261,7 +1289,7 @@ export function AdminApplicationsPage() {
                     <div>
                       {detail.documents.length === 0 ? (
                         <div style={{ padding: "3rem", textAlign: "center", color: "var(--color-text-muted)" }}>
-                          No identity or compliance documents uploaded yet for this application.
+                          No compliance documents uploaded yet for this application.
                         </div>
                       ) : (
                         <div className={styles.docGrid}>
@@ -1269,8 +1297,8 @@ export function AdminApplicationsPage() {
                             <div key={doc.id} className={styles.docCard}>
                               <div className={styles.docCardHeader}>
                                 <span className={styles.docType}>{doc.doc_type}</span>
-                                <span style={{ fontSize: "0.7rem", color: "#34d399" }}>
-                                  [ENCRYPTED VAULT]
+                                <span style={{ fontSize: "0.7rem", color: "var(--color-success)", fontFamily: "var(--font-mono)" }}>
+                                  [ENCRYPTED]
                                 </span>
                               </div>
                               <div className={styles.docFileName}>{doc.file_name}</div>
@@ -1286,7 +1314,7 @@ export function AdminApplicationsPage() {
                                 className={styles.btnDocPreview}
                                 onClick={() => setPreviewDoc(doc)}
                               >
-                                Audit & Preview Document 🔍
+                                Inspect Document Vault 🔍
                               </button>
                             </div>
                           ))}
@@ -1313,7 +1341,7 @@ export function AdminApplicationsPage() {
                                 {item.notes || "No notes attached"}
                               </div>
                               <div style={{ fontSize: "0.72rem", color: "var(--color-text-muted)", marginTop: "0.25rem" }}>
-                                Operator / Actor: <span className="mono">{item.actor_id || "system"}</span>
+                                Actor: <span className="mono">{item.actor_id || "system"}</span>
                               </div>
                             </div>
                           </div>
@@ -1328,47 +1356,46 @@ export function AdminApplicationsPage() {
         </div>
       )}
 
-      {/* Document Preview & Verification Modal */}
+      {/* Document Inspection Dialog */}
       {previewDoc && (
         <div className={styles.modalOverlay}>
-          <div className={styles.decisionDialog} style={{ maxWidth: "42rem" }}>
+          <div className={styles.decisionDialog}>
             <div className={styles.dialogHeader}>
-              <h2>Secure Document Inspection: {previewDoc.doc_type}</h2>
-              <p>Cryptographically verified access token. Vault checksum confirmed.</p>
+              <h2>Encrypted Vault Inspector: {previewDoc.doc_type}</h2>
+              <p>Cryptographic check completed. Zero-knowledge evidence inspection.</p>
             </div>
 
-            <div style={{ background: "var(--color-bg-base)", border: "1px solid var(--color-border)", borderRadius: "var(--radius-md)", padding: "1.25rem", marginBottom: "1.25rem" }}>
+            <div style={{ background: "var(--color-bg-base)", border: "1px solid var(--color-border)", borderRadius: "var(--radius-sm)", padding: "1.25rem", marginBottom: "1.25rem" }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", fontSize: "0.82rem", marginBottom: "1rem" }}>
                 <div><span className="muted">File Name: </span><strong className="mono">{previewDoc.file_name}</strong></div>
-                <div><span className="muted">Doc Type: </span><strong>{previewDoc.doc_type}</strong></div>
+                <div><span className="muted">Type: </span><strong>{previewDoc.doc_type}</strong></div>
                 <div><span className="muted">Size: </span><strong>{(previewDoc.file_size_bytes / 1024).toFixed(1)} KB</strong></div>
-                <div><span className="muted">Status: </span><span style={{ color: "#34d399", fontWeight: 700 }}>ACCEPTED</span></div>
+                <div><span className="muted">Status: </span><span style={{ color: "var(--color-success)", fontWeight: 700 }}>VERIFIED</span></div>
               </div>
 
-              {/* Simulated Document Viewer Box */}
               <div
                 style={{
-                  height: "220px",
-                  background: "radial-gradient(ellipse at center, rgba(34, 211, 238, 0.08) 0%, rgba(5, 7, 13, 0.95) 100%)",
+                  height: "200px",
+                  background: "radial-gradient(ellipse at center, rgba(34, 211, 238, 0.06) 0%, rgba(7, 9, 14, 0.98) 100%)",
                   border: "1px dashed rgba(34, 211, 238, 0.3)",
                   borderRadius: "var(--radius-sm)",
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
                   justifyContent: "center",
-                  gap: "0.5rem",
+                  gap: "0.4rem",
                   color: "var(--color-text-secondary)",
                 }}
               >
-                <span style={{ fontSize: "2.5rem" }}>📄</span>
+                <span style={{ fontSize: "2rem" }}>📄</span>
                 <span style={{ fontSize: "0.9rem", color: "#fff", fontWeight: 600 }}>
-                  Encrypted Document Vault Render
+                  Cryptographic Evidence Vault
                 </span>
                 <span className="mono" style={{ fontSize: "0.72rem", color: "var(--color-accent-cyan)" }}>
-                  SHA256: 8f49a37c02b3781e9d0e1236fb6...
+                  SHA256: 8f49a37c02b3781e9d0e1236fb6d...
                 </span>
-                <span style={{ fontSize: "0.75rem", color: "var(--color-text-muted)" }}>
-                  Protected by Zero-Knowledge Encryption. Inspected by Compliance Desk.
+                <span style={{ fontSize: "0.74rem", color: "var(--color-text-muted)" }}>
+                  Verified by TrafficVaultHub Verification Authority
                 </span>
               </div>
             </div>
@@ -1392,9 +1419,7 @@ export function AdminApplicationsPage() {
           <div className={styles.decisionDialog}>
             <div className={styles.dialogHeader}>
               <h2>Execute Compliance Decision</h2>
-              <p>
-                Every privileged action is recorded in the immutable audit log with policy version v5.0.
-              </p>
+              <p>Privileged operator action recorded in immutable ledger under policy version v5.0.</p>
             </div>
 
             <form onSubmit={(e) => void handleExecuteDecision(e)}>
@@ -1406,55 +1431,71 @@ export function AdminApplicationsPage() {
                   onChange={(e: any) => setDecisionType(e.target.value)}
                 >
                   <option value="APPROVE">Full Approval (Elevate to Verified Partner)</option>
-                  <option value="PROBATIONARY_APPROVE">Approve with Conditions (Probationary Caps & Reserves)</option>
+                  <option value="PROBATIONARY_APPROVE">Conditional Approval (Probationary Caps & Reserves)</option>
                   <option value="REQUEST_DOCS">Request Additional Documents</option>
-                  <option value="SCHEDULE_CALL">Schedule Verification Phone / Video Call</option>
-                  <option value="ESCALATE">Escalate to Senior Fraud / Legal Desk</option>
+                  <option value="SCHEDULE_CALL">Schedule Verification Interview</option>
+                  <option value="ESCALATE">Escalate to Senior Desk</option>
                   <option value="REJECT">Reject Application</option>
                 </select>
               </div>
 
+              {/* Explicit Financial & Access Implications for Probation */}
               {decisionType === "PROBATIONARY_APPROVE" && (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1rem", background: "rgba(34, 211, 238, 0.05)", padding: "1rem", borderRadius: "var(--radius-sm)" }}>
-                  <div>
-                    <label style={{ fontSize: "0.8rem", color: "var(--color-text-secondary)" }}>Daily Click Cap</label>
-                    <input
-                      type="number"
-                      className={styles.formControl}
-                      value={probationaryCap}
-                      onChange={(e) => setProbationaryCap(e.target.value)}
-                    />
+                <div style={{ marginBottom: "1.25rem", background: "rgba(34, 211, 238, 0.05)", border: "1px solid rgba(34, 211, 238, 0.25)", padding: "1rem", borderRadius: "var(--radius-sm)" }}>
+                  <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--color-accent-cyan)", marginBottom: "0.35rem" }}>
+                    Financial & Traffic Limits of Probationary Status:
                   </div>
-                  <div>
-                    <label style={{ fontSize: "0.8rem", color: "var(--color-text-secondary)" }}>Reserve Hold Days</label>
-                    <input
-                      type="number"
-                      className={styles.formControl}
-                      value={reserveDays}
-                      onChange={(e) => setReserveDays(e.target.value)}
-                    />
+                  <ul style={{ margin: "0 0 0.85rem", paddingLeft: "1.2rem", fontSize: "0.78rem", color: "var(--color-text-secondary)", lineHeight: 1.5 }}>
+                    <li>Daily traffic capped until initial conversion audit passes.</li>
+                    <li>7-day rolling financial reserve applied to all affiliate earnings.</li>
+                    <li>Restricted & elevated verticals (adult dating, high-yield finance) remain strictly locked.</li>
+                  </ul>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+                    <div>
+                      <label style={{ fontSize: "0.76rem", color: "var(--color-text-muted)" }}>Daily Click Cap</label>
+                      <input
+                        type="number"
+                        className={styles.formControl}
+                        value={probationaryCap}
+                        onChange={(e) => setProbationaryCap(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: "0.76rem", color: "var(--color-text-muted)" }}>Reserve Hold (Days)</label>
+                      <input
+                        type="number"
+                        className={styles.formControl}
+                        value={reserveDays}
+                        onChange={(e) => setReserveDays(e.target.value)}
+                      />
+                    </div>
                   </div>
                 </div>
               )}
 
               {decisionType === "SCHEDULE_CALL" && (
-                <div style={{ marginBottom: "1rem", background: "rgba(139, 92, 246, 0.08)", padding: "1rem", borderRadius: "var(--radius-sm)" }}>
-                  <label style={{ fontSize: "0.8rem", color: "var(--color-text-secondary)" }}>Proposed Interview Date & Time</label>
+                <div style={{ marginBottom: "1.25rem", background: "rgba(139, 92, 246, 0.08)", border: "1px solid rgba(139, 92, 246, 0.25)", padding: "1rem", borderRadius: "var(--radius-sm)" }}>
+                  <label style={{ fontSize: "0.78rem", color: "var(--color-text-secondary)", display: "block", marginBottom: "0.25rem" }}>
+                    Proposed Interview Date & Time (UTC)
+                  </label>
                   <input
                     type="text"
                     className={styles.formControl}
                     value={interviewDate}
                     onChange={(e) => setInterviewDate(e.target.value)}
-                    placeholder="e.g. Tomorrow 14:00 UTC"
+                    placeholder="e.g. 2026-10-24 15:00 UTC"
                     style={{ marginBottom: "0.5rem" }}
                   />
-                  <label style={{ fontSize: "0.8rem", color: "var(--color-text-secondary)" }}>Interview Platform</label>
+                  <label style={{ fontSize: "0.78rem", color: "var(--color-text-secondary)", display: "block", marginBottom: "0.25rem" }}>
+                    Interview Platform
+                  </label>
                   <input
                     type="text"
                     className={styles.formControl}
                     value={interviewPlatform}
                     onChange={(e) => setInterviewPlatform(e.target.value)}
-                    placeholder="Telegram / Google Meet / Phone"
+                    placeholder="Telegram / Google Meet"
                   />
                 </div>
               )}
@@ -1467,10 +1508,10 @@ export function AdminApplicationsPage() {
                     value={requestDocType}
                     onChange={(e) => setRequestDocType(e.target.value)}
                   >
-                    <option value="PROOF_OF_ADDRESS">Proof of Residential / Business Address</option>
-                    <option value="TRAFFIC_SCREENSHOT">Ad Network Invoices & Billing Proof</option>
-                    <option value="BUSINESS_REGISTRATION">Certificate of Good Standing</option>
-                    <option value="SELFIE_WITH_ID">Selfie with Government ID and Timestamp Note</option>
+                    <option value="PROOF_OF_ADDRESS">Proof of Residential / Corporate Address (Utility / Bank)</option>
+                    <option value="TRAFFIC_SCREENSHOT">Ad Network Invoices & Spend Proof</option>
+                    <option value="BUSINESS_REGISTRATION">Certificate of Incorporation / Good Standing</option>
+                    <option value="SELFIE_WITH_ID">Selfie with Government ID and Timestamp</option>
                   </select>
                 </div>
               )}
@@ -1484,25 +1525,25 @@ export function AdminApplicationsPage() {
                     onChange={(e) => setDecisionReasonCode(e.target.value)}
                   >
                     <option value="VAGUE_TRAFFIC_METHOD">VAGUE_TRAFFIC_METHOD — Insufficient methodology detail</option>
-                    <option value="UNVERIFIABLE_IDENTITY">UNVERIFIABLE_IDENTITY — Document unreadable or fraudulent</option>
+                    <option value="UNVERIFIABLE_IDENTITY">UNVERIFIABLE_IDENTITY — Unreadable or falsified documentation</option>
                     <option value="POLICY_VIOLATION_INTENT">POLICY_VIOLATION_INTENT — Unpermitted advertising techniques</option>
-                    <option value="INCENTIVIZED_TRAFFIC_UNALLOWED">INCENTIVIZED_TRAFFIC_UNALLOWED — Network does not allow incentivized clicks</option>
-                    <option value="SUSPECTED_FRAUD_NETWORK">SUSPECTED_FRAUD_NETWORK — Flagged IP or cross-network match</option>
-                    <option value="DISPOSABLE_CONTACT">DISPOSABLE_CONTACT — Invalid phone or temporary email</option>
+                    <option value="INCENTIVIZED_TRAFFIC_UNALLOWED">INCENTIVIZED_TRAFFIC_UNALLOWED — Incentivized clicks not permitted</option>
+                    <option value="SUSPECTED_FRAUD_NETWORK">SUSPECTED_FRAUD_NETWORK — Flagged fraud fingerprint match</option>
+                    <option value="DISPOSABLE_CONTACT">DISPOSABLE_CONTACT — Temporary disposable phone or email</option>
                   </select>
                 </div>
               )}
 
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>
-                  Officer Reviewer Notes (Sent to applicant & recorded in audit ledger)
+                  Reviewer Notes (Recorded in audit ledger & communicated to applicant)
                 </label>
                 <textarea
                   className={styles.formControl}
                   rows={3}
                   value={decisionNotes}
                   onChange={(e) => setDecisionNotes(e.target.value)}
-                  placeholder="Explain rationale for this decision..."
+                  placeholder="Explain rationale for this compliance decision..."
                 />
               </div>
 
@@ -1533,7 +1574,7 @@ export function AdminApplicationsPage() {
           <div className={styles.decisionDialog}>
             <div className={styles.dialogHeader}>
               <h2>Bulk Decision: {selectedIds.length} Applications</h2>
-              <p>Applying bulk compliance resolution. Each action will be logged individually.</p>
+              <p>Applying bulk resolution across selected applications. Each entry will be logged separately.</p>
             </div>
 
             <form onSubmit={(e) => void handleExecuteBulkDecision(e)}>

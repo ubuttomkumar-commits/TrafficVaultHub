@@ -72,16 +72,19 @@
 
 .nav {
   display: flex;
+  align-items: center;
   gap: 0.25rem;
+  flex-wrap: wrap;
 }
 
 .navLink,
 .navLinkActive {
-  padding: 0.4rem 0.75rem;
+  padding: 0.35rem 0.65rem;
   border-radius: var(--radius-sm);
-  font-size: 0.875rem;
+  font-size: 0.84rem;
   color: var(--color-text-secondary);
   text-decoration: none;
+  white-space: nowrap;
   transition: color 0.15s, background 0.15s;
 }
 
@@ -94,6 +97,18 @@
 .navLinkActive {
   color: var(--color-accent-cyan);
   background: rgba(34, 211, 238, 0.1);
+  font-weight: 600;
+}
+
+.adminNavLink {
+  border: 1px solid rgba(34, 211, 238, 0.25);
+  background: rgba(34, 211, 238, 0.06);
+  color: #22d3ee;
+}
+
+.adminNavLink:hover {
+  border-color: rgba(34, 211, 238, 0.45);
+  background: rgba(34, 211, 238, 0.12);
 }
 
 .main {
@@ -102,6 +117,14 @@
   max-width: 1120px;
   margin: 0 auto;
   padding: 2rem 1.5rem 3rem;
+}
+
+.mainWide {
+  flex: 1;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 1.5rem 1.5rem 3rem;
 }
 
 .footer {
@@ -115,6 +138,25 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  margin-left: 0.5rem;
+}
+
+.signInBtn {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-accent-cyan);
+  background: rgba(34, 211, 238, 0.08);
+  border: 1px solid rgba(34, 211, 238, 0.25);
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.signInBtn:hover {
+  background: rgba(34, 211, 238, 0.16);
+  border-color: #22d3ee;
+  text-decoration: none;
 }
 
 .userBadge {
@@ -124,10 +166,16 @@
   padding: 0.25rem 0.5rem;
   border-radius: var(--radius-sm);
   border: 1px solid var(--color-border);
-  max-width: 140px;
+  max-width: 180px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.userBadgeAdmin {
+  color: #22d3ee;
+  border-color: rgba(34, 211, 238, 0.3);
+  background: rgba(34, 211, 238, 0.08);
 }
 
 .signOutBtn {

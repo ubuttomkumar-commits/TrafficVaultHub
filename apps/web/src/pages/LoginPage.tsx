@@ -10,6 +10,12 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  function fillRole(roleEmail: string) {
+    setEmail(roleEmail);
+    setPassword("Password123!");
+    setError(null);
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
@@ -28,7 +34,13 @@ export function LoginPage() {
       const token = body?.data?.token as string;
       localStorage.setItem("tvh_token", token);
       localStorage.setItem("tvh_user", JSON.stringify(body?.data?.user ?? {}));
-      navigate("/earnings");
+
+      // Route operators to /admin, partners to /earnings
+      if (email.toLowerCase().includes("admin") || body?.data?.user?.role === "super_admin") {
+        navigate("/admin");
+      } else {
+        navigate("/earnings");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
     } finally {
@@ -38,45 +50,82 @@ export function LoginPage() {
 
   return (
     <div className={styles.page}>
-      <h1>Sign in</h1>
-      <p className="muted">
-        Session tokens are stored locally for this browser only. Server
-        validates every request.
+      <div className={styles.brandLockup}>
+        <div className={styles.brandLogo} />
+        <span className={styles.brandName}>TrafficVaultHub</span>
+      </div>
+
+      <h1 className={styles.title}>Sign in</h1>
+      <p className={styles.subtitle}>
+        Authoritative session tokens validated server-side per request. Zero client credential leakage.
       </p>
+
       <form className={styles.form} onSubmit={onSubmit}>
-        <label>
-          Email
+        <div className={styles.formGroup}>
+          <label className={styles.label}>Account Email</label>
           <input
             type="email"
             autoComplete="username"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            className={styles.input}
+            placeholder="operator@trafficvaulthub.local"
             required
           />
-        </label>
-        <label>
-          Password
+        </div>
+
+        <div className={styles.formGroup}>
+          <label className={styles.label}>Master Password</label>
           <input
             type="password"
             autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            className={styles.input}
             required
             minLength={8}
           />
-        </label>
+        </div>
+
         {error && (
           <div className={styles.error} role="alert">
-            {error}
+            ⚠️ {error}
           </div>
         )}
-        <button type="submit" disabled={loading}>
-          {loading ? "Signing in…" : "Sign in"}
+
+        <button type="submit" disabled={loading} className={styles.submitBtn}>
+          {loading ? "Authenticating Session…" : "Sign In to Network"}
         </button>
-        <p className="muted" style={{ marginTop: "1rem", fontSize: "0.85rem" }}>
-          New partner? <Link to="/signup" style={{ color: "#22d3ee", textDecoration: "underline" }}>Create an account</Link>
-        </p>
       </form>
+
+      <div className={styles.quickRolesBox}>
+        <span className={styles.quickRolesLabel}>Quick Session Demo Fill</span>
+        <div className={styles.roleButtons}>
+          <button
+            type="button"
+            className={styles.roleBtn}
+            onClick={() => fillRole("admin@trafficvaulthub.local")}
+          >
+            <strong>Platform Operator</strong>
+            <span>admin@trafficvaulthub.local</span>
+          </button>
+          <button
+            type="button"
+            className={styles.roleBtn}
+            onClick={() => fillRole("partner@trafficvaulthub.com")}
+          >
+            <strong>Affiliate Partner</strong>
+            <span>partner@trafficvaulthub.com</span>
+          </button>
+        </div>
+      </div>
+
+      <div className={styles.footerLinks}>
+        New partner?{" "}
+        <Link to="/signup" style={{ color: "var(--color-accent-cyan)", textDecoration: "underline" }}>
+          Apply for onboarding
+        </Link>
+      </div>
     </div>
   );
 }
