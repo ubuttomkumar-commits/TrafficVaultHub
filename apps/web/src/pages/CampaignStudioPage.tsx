@@ -130,9 +130,16 @@ export function CampaignStudioPage() {
             >
               <option value="CPA">CPA — Cost Per Action / Sale</option>
               <option value="CPL">CPL — Cost Per Lead</option>
+              <option value="CPC">CPC — Cost Per Click</option>
               <option value="CPI">CPI — Cost Per Install</option>
+              <option value="CPM">CPM — Cost Per Mille (1,000 Impressions)</option>
               <option value="CPS">CPS — Cost Per Subscription</option>
-              <option value="REVSHARE">REVSHARE — Revenue Share</option>
+              <option value="CPV">CPV — Cost Per View (Video / Lander)</option>
+              <option value="CPE">CPE — Cost Per Engagement</option>
+              <option value="RECURRING">RECURRING — Recurring Rebill / Subscription</option>
+              <option value="REVSHARE">REVSHARE — Revenue Share %</option>
+              <option value="HYBRID">HYBRID — Hybrid Base + Performance</option>
+              <option value="CUSTOM_EVENT">CUSTOM_EVENT — Custom Milestone Event</option>
             </select>
           </div>
 

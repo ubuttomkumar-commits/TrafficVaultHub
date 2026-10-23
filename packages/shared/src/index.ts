@@ -44,7 +44,12 @@ export const PAYOUT_TYPES = [
   "CPI",
   "CPM",
   "CPS",
+  "CPV",
+  "CPE",
+  "RECURRING",
   "REVSHARE",
+  "HYBRID",
+  "CUSTOM_EVENT",
 ] as const;
 export type PayoutType = (typeof PAYOUT_TYPES)[number];
 

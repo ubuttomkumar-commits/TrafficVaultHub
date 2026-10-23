@@ -18,7 +18,12 @@ const PAYOUT_TYPES = new Set([
   "CPI",
   "CPM",
   "CPS",
+  "CPV",
+  "CPE",
+  "RECURRING",
   "REVSHARE",
+  "HYBRID",
+  "CUSTOM_EVENT",
 ]);
 
 async function isPlatformOps(db: D1Database, userId: string): Promise<boolean> {

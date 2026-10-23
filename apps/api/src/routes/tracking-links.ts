@@ -118,28 +118,32 @@ trackingLinkRoutes.post("/", async (c) => {
     );
   }
 
-  if (
-    offer.access_mode !== "PUBLIC" &&
-    offer.access_mode !== "APPLICATION_REQUIRED"
-  ) {
-    // Private inventory needs affiliate_offer_access — not implemented fully
-    const access = await c.env.DB.prepare(
-      `SELECT 1 AS ok FROM affiliate_offer_access
-       WHERE offer_id = ? AND affiliate_organization_id = ? LIMIT 1`
-    )
-      .bind(offerId, orgId)
-      .first();
-    if (!access) {
-      return c.json(
-        {
-          error: {
-            code: "no_access",
-            message: "No affiliate access to this offer",
-            correlationId,
+  if (offer.access_mode !== "PUBLIC") {
+    try {
+      const access = await c.env.DB.prepare(
+        `SELECT 1 AS ok FROM affiliate_offer_access
+         WHERE offer_id = ? AND affiliate_organization_id = ? AND status = 'APPROVED'
+         LIMIT 1`
+      )
+        .bind(offerId, orgId)
+        .first();
+      if (!access) {
+        return c.json(
+          {
+            error: {
+              code: "approval_required",
+              message:
+                offer.access_mode === "APPLICATION_REQUIRED"
+                  ? "Application approval required for this offer before generating tracking links"
+                  : "Private inventory: approved affiliate access required",
+              correlationId,
+            },
           },
-        },
-        403
-      );
+          403
+        );
+      }
+    } catch {
+      // If table is still provisioning, don't crash
     }
   }
 

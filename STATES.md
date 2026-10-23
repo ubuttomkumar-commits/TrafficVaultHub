@@ -91,13 +91,16 @@ All environment variables and secret names are declared and accessed via `c.env`
 | 2026-10-21 (`b2869f8`) | Master audit & test suite | Created `password.test.ts`, `finance.test.ts`, `tracking.test.ts`, enhanced `CampaignStudioPage`, updated `Shell` with active session badge & sign-out |
 | 2026-10-21 (`623afe8`) | Tracking & Smartlinks | Implemented `TrackingLinksPage`, `SmartlinksPage`, `smartlinks.test.ts`, added routes to `App.tsx` and `Shell.tsx` |
 | 2026-10-21 (`56226c6`) | CI & Workflow audit | Updated `.github/workflows/webpack.yml` to CI workflow running typecheck, test suite, and build |
-| 2026-10-21 (`current`) | Reference-Match Landing Page | Complete 9-section 1:1 match of reference design: 3D Vault hero, value cards, 5-step process, 12 categories, trust globe, product previews, and cosmic CTA |
+| 2026-10-21 (`c46cde4`) | Reference-Match Landing Page | Complete 9-section 1:1 match of reference design: 3D Vault hero, value cards, 5-step process, 12 categories, trust globe, product previews, and cosmic CTA |
+| 2026-10-23 (`current`) | Cloudflare Connection & Deploy | Authenticated Cloudflare API Token for `Uttombarmon45@gmail.com's Account`, provisioned secrets (`SESSION_SECRET`, `POSTBACK_HMAC_SECRET`, `JWT_SECRET`, `TURNSTILE_SECRET_KEY`), and deployed Worker & Pages |
 
 ---
 
 ## 4. Live Deployment Status
 
-- **Web Application (Cloudflare Pages)**: `https://trafficvaulthub.pages.dev`
+- **Cloudflare Account**: `Uttombarmon45@gmail.com's Account` (`fa6ffb91f755b6a7066cd0cf4ce70556`)
+- **Web Application (Cloudflare Pages)**: `https://trafficvaulthub.pages.dev` (Latest build: `https://d1a338bf.trafficvaulthub.pages.dev`)
 - **API Worker (Cloudflare Workers)**: `https://trafficvaulthub.uttombarmon45.workers.dev`
+  - Health check: `https://trafficvaulthub.uttombarmon45.workers.dev/api/v1/health` (Status 200 OK, database: ok)
 - **Development App URL**: `https://ais-dev-n757ih3r5yaboq4tifvem3-308187919618.asia-southeast1.run.app`
 - **Shared App URL**: `https://ais-pre-n757ih3r5yaboq4tifvem3-308187919618.asia-southeast1.run.app`
