@@ -137,13 +137,14 @@ export function AdminCmsPage() {
           </p>
         </div>
         <div className={styles.headerActions}>
+          {loading && <span style={{ color: "#94a3b8", fontSize: "0.85rem", alignSelf: "center" }}>Loading...</span>}
           <button className={styles.btnSecondary} onClick={() => setShowPreview(true)}>
             👁 Preview View
           </button>
-          <button className={styles.btnSecondary} onClick={handleSaveDraft} disabled={savingDraft}>
+          <button className={styles.btnSecondary} onClick={handleSaveDraft} disabled={savingDraft || loading}>
             {savingDraft ? "Saving..." : "Save Private Draft"}
           </button>
-          <button className={styles.btnPrimary} onClick={handlePublish} disabled={publishing}>
+          <button className={styles.btnPrimary} onClick={handlePublish} disabled={publishing || loading}>
             {publishing ? "Publishing..." : "Publish to Live"}
           </button>
         </div>

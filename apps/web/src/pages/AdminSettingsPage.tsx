@@ -118,6 +118,7 @@ export function AdminSettingsPage() {
           <p className={styles.pageSubtitle}>
             Configure financial thresholds, reserve hold duration, feature flags, and official operations desk contact channels.
           </p>
+          {loading && <p style={{ color: "#94a3b8", fontSize: "0.85rem", margin: "0.5rem 0 0" }}>Loading settings...</p>}
         </div>
       </div>
 

@@ -92,6 +92,7 @@ export function AdminMaintenancePage() {
           <p className={styles.pageSubtitle}>
             Emergency isolation and scheduled ledger maintenance kill-switch. When enabled, public portal routes display an obsidian maintenance shield.
           </p>
+          {loading && <p style={{ color: "#94a3b8", fontSize: "0.85rem", margin: "0.5rem 0 0" }}>Loading configuration...</p>}
         </div>
       </div>
 

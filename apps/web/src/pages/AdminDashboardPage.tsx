@@ -48,6 +48,7 @@ type OverviewData = {
   operationalMetrics?: OperationalMetrics;
   recentAuditFeed?: AuditFeedItem[];
   systemHealth?: SystemHealthInfo;
+  maintenanceMode?: boolean;
 };
 
 type AdminUser = {

@@ -118,6 +118,18 @@ export function AdminAuditLogPage() {
             />
             <select
               className={styles.selectInput}
+              value={actionFilter}
+              onChange={(e) => setActionFilter(e.target.value)}
+            >
+              <option value="">All Actions</option>
+              <option value="UPDATE">Update</option>
+              <option value="CREATE">Create</option>
+              <option value="DELETE">Delete</option>
+              <option value="APPROVE">Approve</option>
+              <option value="REJECT">Reject</option>
+            </select>
+            <select
+              className={styles.selectInput}
               value={resourceFilter}
               onChange={(e) => setResourceFilter(e.target.value)}
             >
