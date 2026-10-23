@@ -34,4 +34,5 @@ export type Env = {
   // Transactional Email Service (Resend)
   RESEND_API_KEY?: string;
   EMAIL_FROM?: string;
+  GEMINI_API_KEY?: string;
 };

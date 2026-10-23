@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { HeroVaultScene } from "../components/HeroVaultScene";
 import { HowItWorksProcess } from "../components/HowItWorksProcess";
@@ -6,16 +6,152 @@ import { OfferCategoriesGrid } from "../components/OfferCategoriesGrid";
 import { TrustSection } from "../components/TrustSection";
 import { FAQAccordion } from "../components/FAQAccordion";
 import { FinalCTASection } from "../components/FinalCTASection";
+import { apiUrl } from "../lib/api";
 import styles from "./LandingPage.module.css";
+
+interface CmsData {
+  heroTagline: string;
+  heroHeadline: string;
+  heroSubtext: string;
+  primaryCtaText: string;
+  primaryCtaLink: string;
+  secondaryCtaText: string;
+  secondaryCtaLink: string;
+  trustBullet1: string;
+  trustBullet2: string;
+  trustBullet3: string;
+  trustBullet4: string;
+  customNotice?: string | null;
+}
 
 export function LandingPage() {
   const [themeMode, setThemeMode] = useState<"dark" | "cyber">("cyber");
+  const [cms, setCms] = useState<CmsData | null>(null);
+  const [announcement, setAnnouncement] = useState<any>(null);
+  const [maintenance, setMaintenance] = useState<{ isEnabled: boolean; headline: string } | null>(null);
+  const [isOperator, setIsOperator] = useState(false);
+
+  useEffect(() => {
+    // Check if current user is an operator
+    const userRaw = localStorage.getItem("tvh_user");
+    if (userRaw) {
+      try {
+        const u = JSON.parse(userRaw);
+        if (u.role === "admin" || u.role === "platform_operator" || (u.email && u.email.includes("admin"))) {
+          setIsOperator(true);
+        }
+      } catch {}
+    }
+
+    // Fetch CMS
+    fetch(apiUrl("/api/v1/cms/landing"))
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.data) setCms(res.data);
+      })
+      .catch(() => {});
+
+    // Fetch Active Announcement
+    fetch(apiUrl("/api/v1/announcements/active"))
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.data) setAnnouncement(res.data);
+      })
+      .catch(() => {});
+
+    // Fetch Maintenance status
+    fetch(apiUrl("/api/v1/maintenance/status"))
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.data) setMaintenance(res.data);
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <div className={styles.page}>
       <a href="#main" className={styles.skip}>
         Skip to content
       </a>
+
+      {/* Sitewide Announcement Bar */}
+      {announcement && (
+        <div
+          style={{
+            background:
+              announcement.style === "critical"
+                ? "rgba(239, 68, 68, 0.9)"
+                : announcement.style === "warning"
+                ? "rgba(245, 158, 11, 0.9)"
+                : "rgba(14, 165, 233, 0.9)",
+            color: "#fff",
+            padding: "0.5rem 1rem",
+            fontSize: "0.85rem",
+            textAlign: "center",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "0.75rem",
+            position: "relative",
+            zIndex: 100,
+            borderBottom: "1px solid rgba(255, 255, 255, 0.15)",
+            backdropFilter: "blur(8px)",
+          }}
+        >
+          <span>
+            <strong>{announcement.title}:</strong> {announcement.message}
+          </span>
+          {announcement.link_url && (
+            <Link
+              to={announcement.link_url}
+              style={{
+                color: "#fff",
+                textDecoration: "underline",
+                fontWeight: 600,
+                fontSize: "0.8rem",
+              }}
+            >
+              {announcement.link_label || "Learn more →"}
+            </Link>
+          )}
+        </div>
+      )}
+
+      {/* Maintenance Notice Banner */}
+      {maintenance?.isEnabled && (
+        <div
+          style={{
+            background: "rgba(234, 179, 8, 0.15)",
+            borderBottom: "1px solid rgba(234, 179, 8, 0.35)",
+            color: "#fde047",
+            padding: "0.6rem 1rem",
+            textAlign: "center",
+            fontSize: "0.85rem",
+            position: "relative",
+            zIndex: 99,
+          }}
+        >
+          ⚠️ <strong>System Maintenance Active:</strong> {maintenance.headline}. All tracking and postback redirects continue without interruption.
+        </div>
+      )}
+
+      {/* Dynamic Custom CMS Notice */}
+      {cms?.customNotice && (
+        <div
+          style={{
+            background: "rgba(139, 92, 246, 0.15)",
+            borderBottom: "1px solid rgba(139, 92, 246, 0.35)",
+            color: "#c4b5fd",
+            padding: "0.5rem 1rem",
+            textAlign: "center",
+            fontSize: "0.82rem",
+            position: "relative",
+            zIndex: 98,
+          }}
+        >
+          ℹ️ {cms.customNotice}
+        </div>
+      )}
 
       {/* SECTION 1 — COMPACT PREMIUM DARK NAVIGATION */}
       <header className={styles.topNav}>
@@ -37,6 +173,22 @@ export function LandingPage() {
             <a href="#problems" className={styles.navItem}>Advertisers</a>
             <Link to="/conversion-confidence" className={styles.navItem}>Resources ▾</Link>
             <a href="#trust" className={styles.navItem}>About ▾</a>
+            {isOperator && (
+              <Link
+                to="/admin"
+                className={styles.navItem}
+                style={{
+                  color: "var(--tvh-cyan)",
+                  fontWeight: 600,
+                  border: "1px solid rgba(6, 182, 212, 0.3)",
+                  padding: "0.25rem 0.6rem",
+                  borderRadius: "4px",
+                  background: "rgba(6, 182, 212, 0.08)",
+                }}
+              >
+                Super Admin
+              </Link>
+            )}
           </nav>
 
           <div className={styles.navActions}>
@@ -65,23 +217,29 @@ export function LandingPage() {
           <div className={styles.heroGrid}>
             <div className={styles.heroCopy}>
               <div className={styles.heroTaglinePill}>
-                The CPA Network That Shows Its Work.
+                {cms?.heroTagline || "The CPA Network That Shows Its Work."}
               </div>
               <h1 id="hero-title" className={styles.heroHeadline}>
-                More <span className={styles.cyanText}>Conversions.</span><br />
-                More <span className={styles.gradientRev}>Revenue.</span><br />
-                More <span className={styles.purpleText}>Trust.</span>
+                {cms?.heroHeadline ? (
+                  <span>{cms.heroHeadline}</span>
+                ) : (
+                  <>
+                    More <span className={styles.cyanText}>Conversions.</span><br />
+                    More <span className={styles.gradientRev}>Revenue.</span><br />
+                    More <span className={styles.purpleText}>Trust.</span>
+                  </>
+                )}
               </h1>
               <p className={styles.heroSubtext}>
-                Discover relevant offers, track conversions with greater transparency,
-                and manage affiliate campaigns with stronger financial and fraud controls.
+                {cms?.heroSubtext ||
+                  "Discover relevant offers, track conversions with greater transparency, and manage affiliate campaigns with stronger financial and fraud controls."}
               </p>
               <div className={styles.heroCtas}>
-                <Link to="/signup?role=publisher" className={styles.ctaPublisher}>
-                  Start as Publisher →
+                <Link to={cms?.primaryCtaLink || "/signup?role=publisher"} className={styles.ctaPublisher}>
+                  {cms?.primaryCtaText || "Start as Publisher →"}
                 </Link>
-                <Link to="/signup?role=advertiser" className={styles.ctaAdvertiser}>
-                  Start as Advertiser →
+                <Link to={cms?.secondaryCtaLink || "/signup?role=advertiser"} className={styles.ctaAdvertiser}>
+                  {cms?.secondaryCtaText || "Start as Advertiser →"}
                 </Link>
               </div>
 
@@ -89,19 +247,19 @@ export function LandingPage() {
               <div className={styles.trustIndicatorsRow}>
                 <div className={styles.trustIndicatorItem}>
                   <div className={styles.trustIcon}>🔍</div>
-                  <span>Transparent Tracking</span>
+                  <span>{cms?.trustBullet1 || "Transparent Tracking"}</span>
                 </div>
                 <div className={styles.trustIndicatorItem}>
                   <div className={styles.trustIcon}>💳</div>
-                  <span>Flexible Payouts</span>
+                  <span>{cms?.trustBullet2 || "Flexible Payouts"}</span>
                 </div>
                 <div className={styles.trustIndicatorItem}>
                   <div className={styles.trustIcon}>🛡️</div>
-                  <span>Fraud Protection</span>
+                  <span>{cms?.trustBullet3 || "Fraud Protection"}</span>
                 </div>
                 <div className={styles.trustIndicatorItem}>
                   <div className={styles.trustIcon}>📊</div>
-                  <span>Reliable Reporting</span>
+                  <span>{cms?.trustBullet4 || "Reliable Reporting"}</span>
                 </div>
               </div>
             </div>

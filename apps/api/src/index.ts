@@ -26,7 +26,7 @@ import { integrityRoutes } from "./routes/integrity";
 import { smartlinkRoutes, smartlinkPublicRoutes } from "./routes/smartlinks";
 import { payoutRoutes } from "./routes/payouts";
 import { evidenceRoutes } from "./routes/evidence";
-import { adminRoutes } from "./routes/admin";
+import { adminRoutes, publicCmsRoutes } from "./routes/admin";
 import { onboardingRoutes } from "./routes/onboarding";
 import { errorHandler } from "./middleware/error-handler";
 import { correlationId } from "./middleware/correlation-id";
@@ -91,6 +91,8 @@ api.route("/payouts", payoutRoutes);
 api.route("/evidence", evidenceRoutes);
 api.route("/admin", adminRoutes);
 api.route("/onboarding", onboardingRoutes);
+api.route("/cms", publicCmsRoutes);
+api.route("/", publicCmsRoutes);
 
 app.route(API_PREFIX, api);
 

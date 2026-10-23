@@ -249,6 +249,70 @@ function devMockApiPlugin(): Plugin {
     }
   ];
 
+  let mockCmsLanding = {
+    siteName: "TrafficVaultHub",
+    tagline: "The CPA Network That Shows Its Work",
+    logoUrl: "",
+    heroHeadline: "The CPA Network That Shows Its Work",
+    heroSubheadline: "Universal CPA affiliate network built on double-entry accounting and cryptographic proof. Every click accounted for. Every decision explained. Every valid payout tracked.",
+    ctaPrimaryText: "Explore Live Offers",
+    ctaPrimaryLink: "/offers",
+    ctaSecondaryText: "Partner Verification",
+    ctaSecondaryLink: "/signup",
+    supportEmail: "support@trafficvaulthub.com",
+    telegramHandle: "@TrafficVaultDesk",
+    minPayoutDisplay: "$50 Minimum",
+    seoTitle: "TrafficVaultHub — Universal CPA Network",
+    seoDescription: "Publishers track and protect every valid conversion. Advertisers control quality, fraud risk, and campaign spend.",
+    version: 1,
+    publishedAt: new Date().toISOString()
+  };
+
+  let mockCmsDraft = { ...mockCmsLanding };
+  let mockCmsRevisions = [
+    { id: "rev_1", revision_num: 1, change_summary: "Initial production baseline", created_at: new Date().toISOString() }
+  ];
+
+  let mockAnnouncements = [
+    {
+      id: "ann_1",
+      title: "Universal Ledger Live",
+      message: "Welcome to TrafficVaultHub. Every click accounted for. Every decision explained. Every valid payout tracked.",
+      link_url: "/offers",
+      link_label: "Explore Offers",
+      style: "info",
+      target_audience: "all",
+      is_active: 1,
+      created_at: new Date().toISOString()
+    }
+  ];
+
+  let mockMaintenance = {
+    isEnabled: false,
+    headline: "Scheduled System Maintenance",
+    message: "TrafficVaultHub is performing scheduled network synchronization and upgrades. All tracking and postback redirects continue without interruption.",
+    estimatedDuration: "30 minutes",
+    allowAdminBypass: true,
+    allowedIps: ""
+  };
+
+  let mockSettings: Record<string, any> = {
+    min_payout_minor: 5000,
+    default_hold_days: 7,
+    probation_click_cap_daily: 250,
+    support_contact: {
+      email: "support@trafficvaulthub.com",
+      telegram: "@TrafficVaultDesk",
+      skype: "live:.cid.tvhsupport"
+    },
+    feature_flags: {
+      binance_pay_enabled: true,
+      smartlinks_enabled: true,
+      auto_otp_dispatch: true,
+      risk_engine_active: true
+    }
+  };
+
   const mockDimensions: Record<string, any[]> = {
     app_pub_sample01: [
       { id: "d1", application_id: "app_pub_sample01", dimension: "EMAIL", stage: "VERIFIED", status: "PASSED", verified_at: new Date().toISOString() },
@@ -581,6 +645,446 @@ function devMockApiPlugin(): Plugin {
         // Admin audit logs
         if (pathname === "/api/v1/admin/audit-logs") {
           return sendJson(res, 200, { data: mockAuditLogs });
+        }
+
+        // Public CMS & Announcements & Maintenance
+        if (pathname === "/api/v1/cms/landing") {
+          return sendJson(res, 200, { data: mockCmsLanding });
+        }
+        if (pathname === "/api/v1/announcements/active") {
+          const active = mockAnnouncements.find(a => a.is_active === 1);
+          return sendJson(res, 200, { data: active || null });
+        }
+        if (pathname === "/api/v1/maintenance/status") {
+          return sendJson(res, 200, { data: mockMaintenance });
+        }
+
+        // Super Admin: Publishers List
+        if (pathname === "/api/v1/admin/publishers") {
+          const pubList = mockApplications
+            .filter(a => a.account_type === "PUBLISHER")
+            .map(a => ({
+              org_id: "org_pub_" + a.id,
+              org_name: a.company_name || `${a.first_name} ${a.last_name}`,
+              org_status: a.status === "APPROVED" ? "active" : a.status === "PROBATIONARY_APPROVED" ? "probation" : "pending",
+              org_created_at: a.created_at,
+              user_id: "usr_" + a.id,
+              email: a.email,
+              display_name: `${a.first_name} ${a.last_name}`,
+              user_status: "ACTIVE",
+              email_verified: a.email_verified,
+              application_id: a.id,
+              app_status: a.status,
+              risk_score: a.risk_score || 0,
+              risk_flags: a.risk_flags || [],
+              traffic_sources: a.traffic_sources,
+              conditional_caps: a.conditional_caps,
+              contact_method: a.contact_method,
+              contact_handle: a.contact_handle,
+              total_conversions: 42,
+              total_earned_minor: 84000
+            }));
+          return sendJson(res, 200, { data: pubList });
+        }
+
+        // Super Admin: Publisher Detail & Update
+        const pubMatch = pathname.match(/^\/api\/v1\/admin\/publishers\/([^/]+)$/);
+        if (pubMatch) {
+          const pubId = pubMatch[1];
+          if (req.method === "GET") {
+            const app = mockApplications.find(a => a.account_type === "PUBLISHER") || mockApplications[0];
+            return sendJson(res, 200, {
+              data: {
+                organization: { id: pubId, name: app.company_name, status: "active", created_at: app.created_at },
+                members: [{ id: "usr_1", email: app.email, display_name: `${app.first_name} ${app.last_name}`, status: "ACTIVE", email_verified: 1, role_name: "Publisher" }],
+                application: app,
+                conversionsSummary: [{ lifecycle_status: "COMMISSION_APPROVED", count: 38, total_minor: 76000 }],
+                recentPayouts: payouts,
+                trackingLinks,
+                auditHistory: mockAuditLogs.slice(0, 5)
+              }
+            });
+          }
+          if (req.method === "PATCH") {
+            const body = await readRequestBody(req);
+            mockAuditLogs.unshift({
+              id: "aud_" + Math.random().toString(36).substring(2, 9),
+              action: "PUBLISHER_MODERATION",
+              resource_id: pubId,
+              details: body,
+              created_at: new Date().toISOString()
+            });
+            return sendJson(res, 200, { data: { id: pubId, ...body, updatedAt: new Date().toISOString() } });
+          }
+        }
+
+        // Super Admin: Advertisers List
+        if (pathname === "/api/v1/admin/advertisers") {
+          const advList = mockApplications
+            .filter(a => a.account_type === "ADVERTISER")
+            .map(a => ({
+              org_id: "org_adv_" + a.id,
+              org_name: a.company_name,
+              org_status: "active",
+              org_created_at: a.created_at,
+              user_id: "usr_" + a.id,
+              email: a.email,
+              display_name: `${a.first_name} ${a.last_name}`,
+              user_status: "ACTIVE",
+              application_id: a.id,
+              app_status: a.status,
+              company_name: a.company_name,
+              country: a.country,
+              total_offers: 3,
+              active_offers: 2
+            }));
+          return sendJson(res, 200, { data: advList });
+        }
+
+        // Super Admin: Advertiser Detail & Update
+        const advMatch = pathname.match(/^\/api\/v1\/admin\/advertisers\/([^/]+)$/);
+        if (advMatch) {
+          const advId = advMatch[1];
+          if (req.method === "GET") {
+            const advApp = mockApplications.find(a => a.account_type === "ADVERTISER") || mockApplications[1];
+            return sendJson(res, 200, {
+              data: {
+                organization: { id: advId, name: advApp.company_name, status: "active", created_at: advApp.created_at },
+                members: [{ id: "usr_adv_1", email: advApp.email, display_name: `${advApp.first_name} ${advApp.last_name}`, status: "ACTIVE", role_name: "Advertiser" }],
+                offers: offers.slice(0, 2),
+                complianceCases: complianceCases.slice(0, 1)
+              }
+            });
+          }
+          if (req.method === "PATCH") {
+            const body = await readRequestBody(req);
+            return sendJson(res, 200, { data: { id: advId, ...body, updatedAt: new Date().toISOString() } });
+          }
+        }
+
+        // Super Admin: Offers Control
+        if (pathname === "/api/v1/admin/offers") {
+          if (req.method === "POST") {
+            const body = await readRequestBody(req);
+            const newOff = {
+              id: "off_" + Math.random().toString(36).substring(2, 9),
+              public_id: body.publicId || ("OFF-" + Math.floor(100000 + Math.random() * 900000)),
+              name: body.name,
+              description: body.description || null,
+              status: body.status || "draft",
+              payout_model: (body.payoutModel || "cpa").toLowerCase(),
+              currency: body.currency || "USD",
+              current_payout_version: 1,
+              attribution_window_hours: 720,
+              category_name: "Mainstream Dating",
+              advertiser_name: "Aurora Security Global Ltd",
+              affiliate_payout_minor: body.affiliatePayoutMinor || 2500,
+              event_name: body.eventName || "conversion",
+              created_at: new Date().toISOString()
+            };
+            offers.unshift({
+              id: newOff.id,
+              name: newOff.name,
+              description: newOff.description || "",
+              vertical: "Custom",
+              status: newOff.status.toUpperCase(),
+              accessMode: "PUBLIC",
+              payoutType: newOff.payout_model.toUpperCase(),
+              currency: newOff.currency,
+              affiliateCommissionMinor: newOff.affiliate_payout_minor,
+              conversionEvent: newOff.event_name
+            });
+            return sendJson(res, 201, { data: newOff });
+          }
+          const adminOffers = offers.map(o => ({
+            id: o.id,
+            public_id: "OFF-" + o.id.slice(-6).toUpperCase(),
+            name: o.name,
+            description: o.description,
+            status: o.status.toLowerCase(),
+            payout_model: o.payoutType.toLowerCase(),
+            currency: o.currency,
+            current_payout_version: 1,
+            attribution_window_hours: 720,
+            category_name: o.vertical,
+            advertiser_name: "Aurora Security Global Ltd",
+            affiliate_payout_minor: o.affiliateCommissionMinor,
+            event_name: o.conversionEvent,
+            created_at: new Date().toISOString()
+          }));
+          return sendJson(res, 200, { data: adminOffers });
+        }
+
+        const adminOffMatch = pathname.match(/^\/api\/v1\/admin\/offers\/([^/]+)$/);
+        if (adminOffMatch && req.method === "PATCH") {
+          const offId = adminOffMatch[1];
+          const body = await readRequestBody(req);
+          const found = offers.find(o => o.id === offId);
+          if (found) {
+            if (body.status) found.status = body.status.toUpperCase();
+            if (body.name) found.name = body.name;
+          }
+          return sendJson(res, 200, { data: { id: offId, ...body, updatedAt: new Date().toISOString() } });
+        }
+
+        const payoutVerMatch = pathname.match(/^\/api\/v1\/admin\/offers\/([^/]+)\/new-payout-version$/);
+        if (payoutVerMatch && req.method === "POST") {
+          const offId = payoutVerMatch[1];
+          const body = await readRequestBody(req);
+          return sendJson(res, 201, { data: { id: offId, version: 2, payoutMinor: body.affiliatePayoutMinor } });
+        }
+
+        // Super Admin: Categories Control
+        if (pathname === "/api/v1/admin/categories") {
+          if (req.method === "POST") {
+            const body = await readRequestBody(req);
+            const newCat = {
+              id: "cat_" + Math.random().toString(36).substring(2, 9),
+              slug: (body.slug || body.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")),
+              name: body.name,
+              description: body.description || null,
+              parent_id: body.parentId || null,
+              sort_order: Number(body.sortOrder || 50),
+              is_active: 1,
+              risk_classification: body.riskClassification || "standard",
+              offer_count: 0
+            };
+            seedCategories.push(newCat);
+            return sendJson(res, 201, { data: newCat });
+          }
+          const adminCats = seedCategories.map(c => ({
+            ...c,
+            parent_name: c.parent_id ? seedCategories.find(p => p.id === c.parent_id)?.name || null : null,
+            offer_count: offers.filter(o => o.vertical === c.name).length
+          }));
+          return sendJson(res, 200, { data: adminCats });
+        }
+
+        const adminCatMatch = pathname.match(/^\/api\/v1\/admin\/categories\/([^/]+)$/);
+        if (adminCatMatch && req.method === "PATCH") {
+          const catId = adminCatMatch[1];
+          const body = await readRequestBody(req);
+          const found = seedCategories.find(c => c.id === catId);
+          if (found) {
+            if (body.name) found.name = body.name;
+            if (body.riskClassification) found.risk_classification = body.riskClassification;
+            if (body.isActive !== undefined) found.is_active = body.isActive ? 1 : 0;
+            if (body.sortOrder !== undefined) found.sort_order = Number(body.sortOrder);
+          }
+          return sendJson(res, 200, { data: { id: catId, ...body } });
+        }
+
+        // Super Admin: Payouts Control
+        if (pathname === "/api/v1/admin/payouts") {
+          const adminPayouts = payouts.map(p => ({
+            ...p,
+            organization_name: "Apex Performance Media",
+            organization_type: "publisher",
+            requester_email: "marcus.vance@apexaffiliates.com",
+            requester_name: "Marcus Vance",
+            requested_at: new Date(Date.now() - 86400000).toISOString(),
+            destination_details: JSON.stringify({ method: "Binance Pay", payId: "84729103" })
+          }));
+          return sendJson(res, 200, { data: adminPayouts });
+        }
+
+        const adminPayMatch = pathname.match(/^\/api\/v1\/admin\/payouts\/([^/]+)\/decide$/);
+        if (adminPayMatch && req.method === "POST") {
+          const payId = adminPayMatch[1];
+          const body = await readRequestBody(req);
+          const found = payouts.find(p => p.id === payId);
+          if (found) {
+            found.status = body.decision;
+          }
+          return sendJson(res, 200, { data: { id: payId, status: body.decision, decidedAt: new Date().toISOString() } });
+        }
+
+        // Super Admin: Tracking Diagnostics
+        if (pathname === "/api/v1/admin/tracking/diagnostics") {
+          return sendJson(res, 200, {
+            data: {
+              clicks24h: 3842,
+              conversions24h: 142,
+              recentClicks: [
+                { id: "clk_991", code: "trk_vpn_top", offer_name: "ShieldVault VPN Ultra", ip_hash: "a9f8...21e0", user_agent: "Mozilla/5.0 Mac Chrome", created_at: new Date(Date.now() - 15000).toISOString() },
+                { id: "clk_990", code: "trk_dating_social", offer_name: "SoulMatch Global Dating", ip_hash: "bb41...77d2", user_agent: "Mozilla/5.0 iPhone Safari", created_at: new Date(Date.now() - 42000).toISOString() },
+                { id: "clk_989", code: "trk_vpn_top", offer_name: "ShieldVault VPN Ultra", ip_hash: "cc12...334a", user_agent: "Mozilla/5.0 Windows Edge", created_at: new Date(Date.now() - 80000).toISOString() },
+              ],
+              conversionLifecycleBreakdown: [
+                { lifecycle_status: "COMMISSION_APPROVED", count: 95 },
+                { lifecycle_status: "COMMISSION_PENDING", count: 19 },
+                { lifecycle_status: "RECEIVED", count: 28 },
+              ],
+              checkedAt: new Date().toISOString()
+            }
+          });
+        }
+
+        // Super Admin: CMS Landing Page Control
+        if (pathname === "/api/v1/admin/cms/landing") {
+          return sendJson(res, 200, {
+            data: {
+              published: mockCmsLanding,
+              draft: mockCmsDraft,
+              revisions: mockCmsRevisions
+            }
+          });
+        }
+
+        if (pathname === "/api/v1/admin/cms/landing/draft" && req.method === "POST") {
+          const body = await readRequestBody(req);
+          mockCmsDraft = { ...mockCmsDraft, ...body };
+          return sendJson(res, 200, { data: { ok: true, savedAt: new Date().toISOString() } });
+        }
+
+        if (pathname === "/api/v1/admin/cms/landing/publish" && req.method === "POST") {
+          const body = await readRequestBody(req);
+          const nextVer = (mockCmsLanding.version || 1) + 1;
+          mockCmsLanding = {
+            ...mockCmsDraft,
+            ...(body.content || body),
+            version: nextVer,
+            publishedAt: new Date().toISOString()
+          };
+          mockCmsDraft = { ...mockCmsLanding };
+          mockCmsRevisions.unshift({
+            id: "rev_" + nextVer,
+            revision_num: nextVer,
+            change_summary: body.changeSummary || `Version ${nextVer} published`,
+            created_at: new Date().toISOString()
+          });
+          return sendJson(res, 200, { data: { ok: true, version: nextVer, publishedAt: mockCmsLanding.publishedAt } });
+        }
+
+        // Super Admin: Announcements Control
+        if (pathname === "/api/v1/admin/announcements") {
+          if (req.method === "POST") {
+            const body = await readRequestBody(req);
+            const newAnn = {
+              id: "ann_" + Math.random().toString(36).substring(2, 9),
+              title: body.title || "Network Announcement",
+              message: body.message,
+              link_url: body.linkUrl || null,
+              link_label: body.linkLabel || null,
+              style: body.style || "info",
+              target_audience: body.targetAudience || "all",
+              is_active: body.isActive !== undefined ? (body.isActive ? 1 : 0) : 1,
+              created_at: new Date().toISOString()
+            };
+            if (newAnn.is_active) {
+              mockAnnouncements.forEach(a => { a.is_active = 0; });
+            }
+            mockAnnouncements.unshift(newAnn);
+            return sendJson(res, 201, { data: newAnn });
+          }
+          return sendJson(res, 200, { data: mockAnnouncements });
+        }
+
+        const annMatch = pathname.match(/^\/api\/v1\/admin\/announcements\/([^/]+)$/);
+        if (annMatch) {
+          const annId = annMatch[1];
+          if (req.method === "PATCH") {
+            const body = await readRequestBody(req);
+            const found = mockAnnouncements.find(a => a.id === annId);
+            if (found) {
+              if (body.isActive !== undefined) {
+                if (body.isActive) mockAnnouncements.forEach(a => { a.is_active = 0; });
+                found.is_active = body.isActive ? 1 : 0;
+              }
+              if (body.title) found.title = body.title;
+              if (body.message) found.message = body.message;
+              if (body.style) found.style = body.style;
+              if (body.linkUrl !== undefined) found.link_url = body.linkUrl;
+              if (body.linkLabel !== undefined) found.link_label = body.linkLabel;
+              if (body.targetAudience) found.target_audience = body.targetAudience;
+            }
+            return sendJson(res, 200, { data: found || { id: annId } });
+          }
+          if (req.method === "DELETE") {
+            mockAnnouncements = mockAnnouncements.filter(a => a.id !== annId);
+            return sendJson(res, 200, { data: { ok: true, id: annId } });
+          }
+        }
+
+        // Super Admin: Maintenance Control
+        if (pathname === "/api/v1/admin/maintenance") {
+          if (req.method === "POST") {
+            const body = await readRequestBody(req);
+            mockMaintenance = {
+              ...mockMaintenance,
+              isEnabled: Boolean(body.isEnabled),
+              headline: body.headline || mockMaintenance.headline,
+              message: body.message || mockMaintenance.message,
+              estimatedDuration: body.estimatedDuration || mockMaintenance.estimatedDuration,
+              allowAdminBypass: body.allowAdminBypass !== undefined ? Boolean(body.allowAdminBypass) : true,
+              allowedIps: body.allowedIps || ""
+            };
+            return sendJson(res, 200, { data: mockMaintenance });
+          }
+          return sendJson(res, 200, { data: mockMaintenance });
+        }
+
+        // Super Admin: Settings
+        if (pathname === "/api/v1/admin/settings") {
+          if (req.method === "POST") {
+            const body = await readRequestBody(req);
+            mockSettings = { ...mockSettings, ...body };
+            return sendJson(res, 200, { data: { ok: true, updatedKeys: Object.keys(body) } });
+          }
+          return sendJson(res, 200, { data: mockSettings });
+        }
+
+        // Super Admin: AI Assistant Endpoints
+        if (pathname === "/api/v1/admin/ai/analyze-risk" && req.method === "POST") {
+          const body = await readRequestBody(req);
+          const app = body.applicant || {};
+          return sendJson(res, 200, {
+            data: {
+              executiveSummary: `Applicant reports ${app.experienceYears || app.years_experience || 4} years running ${Array.isArray(app.trafficSources) ? app.trafficSources.join(", ") : "search and native"} media. Clean traffic signals detected with verifiable corporate history. Low fraud probability.`,
+              primaryRisks: [
+                "High initial volume requests require daily cap safeguarding during 14-day calibration period",
+                "Ensure geo targeting adheres strictly to advertiser approved country lists"
+              ],
+              suggestedInterviewQuestions: [
+                "What specific tracking software and sub-id parameter structures do you deploy?",
+                "Can you share live campaign dashboard screenshots demonstrating clean traffic quality?",
+                "What is your typical conversion rate and refund/chargeback threshold on similar CPA offers?"
+              ],
+              recommendedAction: "PROBATIONARY_APPROVE"
+            }
+          });
+        }
+
+        if (pathname === "/api/v1/admin/ai/draft-message" && req.method === "POST") {
+          const body = await readRequestBody(req);
+          const intent = body.intent || "REQUEST_DOCS";
+          const name = body.applicantName || "Partner";
+          if (intent === "REQUEST_DOCS") {
+            return sendJson(res, 200, {
+              data: {
+                subject: "TrafficVaultHub — Verification Documents Required for Your Application",
+                body: `Dear ${name},\n\nThank you for applying to TrafficVaultHub. Before we can activate your publisher portal, our compliance team requires additional verification documentation:\n\n1. Government-issued photo identification or corporate registration certificate\n2. Proof of traffic source (recent billing statement or active ad manager screenshot)\n\n${body.notes ? `Additional notes: ${body.notes}\n\n` : ""}Please upload these documents directly via your verification portal at https://trafficvaulthub.pages.dev/verification.\n\nBest regards,\nOperations Desk\nTrafficVaultHub`
+              }
+            });
+          }
+          return sendJson(res, 200, {
+            data: {
+              subject: "Update Regarding Your TrafficVaultHub Partner Application",
+              body: `Dear ${name},\n\nThank you for your interest in joining the TrafficVaultHub network. After careful review of your application, we are unable to approve access at this time.\n\n${body.notes ? `Reason: ${body.notes}\n\n` : ""}You may re-apply after 60 days with updated traffic documentation.\n\nSincerely,\nOperations Review Desk\nTrafficVaultHub`
+            }
+          });
+        }
+
+        // Super Admin: User Role Update
+        const userRoleMatch = pathname.match(/^\/api\/v1\/admin\/users\/([^/]+)\/role$/);
+        if (userRoleMatch && req.method === "PATCH") {
+          const userId = userRoleMatch[1];
+          const body = await readRequestBody(req);
+          const found = mockUsers.find(u => u.id === userId);
+          if (found) {
+            found.role_name = body.role;
+          }
+          return sendJson(res, 200, { data: { userId, role: body.role } });
         }
 
         // Onboarding: Publisher sign-up

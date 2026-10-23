@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { AdminNav } from "../components/AdminNav";
 import { apiUrl } from "../lib/api";
 import styles from "./AdminDashboardPage.module.css";
 
@@ -326,6 +327,7 @@ export function AdminDashboardPage() {
 
   return (
     <div className={styles.page}>
+      <AdminNav maintenanceActive={Boolean(overview?.maintenanceMode)} />
       {/* Breadcrumbs */}
       <div className={styles.breadcrumbs}>
         <span>Platform Operations</span>

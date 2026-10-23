@@ -1,6 +1,7 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect, type ReactNode } from "react";
 import { PRODUCT_NAME, PRODUCT_TAGLINE } from "@trafficvaulthub/shared";
+import { apiUrl } from "../lib/api";
 import styles from "./Shell.module.css";
 
 const NAV = [
@@ -29,6 +30,8 @@ export function Shell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const [token, setToken] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [announcement, setAnnouncement] = useState<any>(null);
+  const [maintenance, setMaintenance] = useState<{ isEnabled: boolean; headline: string } | null>(null);
 
   useEffect(() => {
     const t = localStorage.getItem("tvh_token");
@@ -44,6 +47,16 @@ export function Shell({ children }: { children: ReactNode }) {
     } else {
       setUserEmail(null);
     }
+
+    fetch(apiUrl("/api/v1/announcements/active"))
+      .then((r) => r.json())
+      .then((d) => setAnnouncement(d.data))
+      .catch(() => {});
+
+    fetch(apiUrl("/api/v1/maintenance/status"))
+      .then((r) => r.json())
+      .then((d) => setMaintenance(d.data))
+      .catch(() => {});
   }, [location.pathname]);
 
   function handleSignOut() {
@@ -60,6 +73,34 @@ export function Shell({ children }: { children: ReactNode }) {
   return (
     <div className={styles.shell}>
       <a href="#main-content" className={styles.skipLink}>Skip to content</a>
+
+      {announcement && (
+        <div
+          className={`${styles.announcementBar} ${
+            announcement.style === "critical"
+              ? styles.announcementCritical
+              : announcement.style === "warning"
+              ? styles.announcementWarning
+              : ""
+          }`}
+        >
+          <span>
+            <strong>{announcement.title}:</strong> {announcement.message}
+          </span>
+          {announcement.link_url && (
+            <Link to={announcement.link_url} className={styles.announcementLink}>
+              {announcement.link_label || "Learn more →"}
+            </Link>
+          )}
+        </div>
+      )}
+
+      {maintenance?.isEnabled && (
+        <div className={styles.maintenanceBanner}>
+          ⚠️ <strong>System Maintenance Active:</strong> {maintenance.headline}. All tracking and postback redirects continue without interruption.
+        </div>
+      )}
+
       <header className={styles.header}>
         <div className={styles.brand}>
           <Link to="/" className={styles.logo}>

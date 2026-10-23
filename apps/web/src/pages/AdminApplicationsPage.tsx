@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
+import { AdminNav } from "../components/AdminNav";
 import { apiUrl } from "../lib/api";
 import styles from "./AdminApplicationsPage.module.css";
 
@@ -362,6 +363,7 @@ export function AdminApplicationsPage() {
 
   return (
     <div className={styles.page}>
+      <AdminNav />
       {/* Breadcrumbs */}
       <div className={styles.breadcrumbs}>
         <Link to="/admin" className={styles.breadcrumbLink}>Platform Operations</Link>

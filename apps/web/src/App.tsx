@@ -22,6 +22,19 @@ import { AdminDashboardPage } from "./pages/AdminDashboardPage";
 import { VerificationStatusPage } from "./pages/VerificationStatusPage";
 import { AdminApplicationsPage } from "./pages/AdminApplicationsPage";
 import { AdminLoginPage } from "./pages/AdminLoginPage";
+import { AdminPublishersPage } from "./pages/AdminPublishersPage";
+import { AdminAdvertisersPage } from "./pages/AdminAdvertisersPage";
+import { AdminOffersPage } from "./pages/AdminOffersPage";
+import { AdminCategoriesPage } from "./pages/AdminCategoriesPage";
+import { AdminPayoutsPage } from "./pages/AdminPayoutsPage";
+import { AdminTrackingPage } from "./pages/AdminTrackingPage";
+import { AdminCmsPage } from "./pages/AdminCmsPage";
+import { AdminAnnouncementsPage } from "./pages/AdminAnnouncementsPage";
+import { AdminMaintenancePage } from "./pages/AdminMaintenancePage";
+import { AdminUsersPage } from "./pages/AdminUsersPage";
+import { AdminSettingsPage } from "./pages/AdminSettingsPage";
+import { AdminAiToolsPage } from "./pages/AdminAiToolsPage";
+import { AdminAuditLogPage } from "./pages/AdminAuditLogPage";
 
 function AppRoutes() {
   const location = useLocation();
@@ -50,6 +63,19 @@ function AppRoutes() {
         <Route path="/admin" element={<AdminDashboardPage />} />
         <Route path="/admin/login" element={<AdminLoginPage />} />
         <Route path="/admin/applications" element={<AdminApplicationsPage />} />
+        <Route path="/admin/publishers" element={<AdminPublishersPage />} />
+        <Route path="/admin/advertisers" element={<AdminAdvertisersPage />} />
+        <Route path="/admin/offers" element={<AdminOffersPage />} />
+        <Route path="/admin/categories" element={<AdminCategoriesPage />} />
+        <Route path="/admin/payouts" element={<AdminPayoutsPage />} />
+        <Route path="/admin/tracking" element={<AdminTrackingPage />} />
+        <Route path="/admin/cms" element={<AdminCmsPage />} />
+        <Route path="/admin/announcements" element={<AdminAnnouncementsPage />} />
+        <Route path="/admin/maintenance" element={<AdminMaintenancePage />} />
+        <Route path="/admin/users" element={<AdminUsersPage />} />
+        <Route path="/admin/settings" element={<AdminSettingsPage />} />
+        <Route path="/admin/ai-tools" element={<AdminAiToolsPage />} />
+        <Route path="/admin/audit-log" element={<AdminAuditLogPage />} />
         <Route path="/earnings" element={<EarningsPage />} />
         <Route path="/conversion-confidence" element={<ConversionConfidencePage />} />
         <Route path="/offer-caps" element={<OfferCapsPage />} />
