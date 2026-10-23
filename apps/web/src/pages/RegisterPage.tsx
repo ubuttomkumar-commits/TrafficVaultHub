@@ -1,152 +1,72 @@
 import { useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { apiUrl } from "../lib/api";
+import { Link, useSearchParams } from "react-router-dom";
+import { PublisherWizard } from "../components/onboarding/PublisherWizard";
+import { AdvertiserWizard } from "../components/onboarding/AdvertiserWizard";
 import styles from "./RegisterPage.module.css";
 
 export function RegisterPage() {
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const initialRole = searchParams.get("role")?.toLowerCase() === "advertiser" ? "ADVERTISER" : "PUBLISHER";
-
   const [accountType, setAccountType] = useState<"PUBLISHER" | "ADVERTISER">(initialRole);
-  const [displayName, setDisplayName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [orgName, setOrgName] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-
-    try {
-      const res = await fetch(apiUrl("/api/v1/auth/register"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: email.trim().toLowerCase(),
-          password,
-          displayName: displayName.trim(),
-          accountType,
-          organizationName: orgName.trim() || undefined,
-        }),
-      });
-
-      const body = await res.json();
-      if (!res.ok) {
-        setError(body?.error?.message ?? `Registration failed (HTTP ${res.status})`);
-        return;
-      }
-
-      const token = body?.data?.token as string;
-      if (token) {
-        localStorage.setItem("tvh_token", token);
-        localStorage.setItem("tvh_user", JSON.stringify(body?.data?.user ?? {}));
-      }
-
-      // Redirect based on role
-      if (accountType === "ADVERTISER") {
-        navigate("/campaign-studio");
-      } else {
-        navigate("/offers");
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Registration failed");
-    } finally {
-      setLoading(false);
-    }
-  }
 
   return (
     <div className={styles.page}>
-      <h1>Create your Partner Account</h1>
-      <p>
-        Join TrafficVaultHub universal CPA network. Transparent tracking, clear attribution, and auditable financial records.
-      </p>
+      <div style={{ textAlign: "center", maxWidth: "42rem", margin: "0 auto 2rem" }}>
+        <h1 style={{ fontSize: "2rem", marginBottom: "0.5rem", letterSpacing: "-0.03em" }}>
+          Partner Onboarding & Verification
+        </h1>
+        <p style={{ color: "var(--color-text-secondary)", fontSize: "1rem", lineHeight: 1.5, margin: 0 }}>
+          TrafficVaultHub is built on strict verification and transparent ledger accounting.
+          Every decision is explained. Every valid payout is tracked.
+        </p>
 
-      <form className={styles.form} onSubmit={onSubmit}>
-        <div className={styles.typeSelector}>
+        {/* Top Type Selector */}
+        <div style={{ display: "inline-flex", background: "var(--color-bg-surface)", border: "1px solid var(--color-border)", borderRadius: "9999px", padding: "0.35rem", marginTop: "1.5rem" }}>
           <button
             type="button"
-            className={`${styles.typeBtn} ${accountType === "PUBLISHER" ? styles.typeBtnActive : ""}`}
+            style={{
+              padding: "0.6rem 1.4rem",
+              borderRadius: "9999px",
+              border: "none",
+              cursor: "pointer",
+              fontWeight: 600,
+              fontSize: "0.92rem",
+              background: accountType === "PUBLISHER" ? "var(--color-accent-cyan)" : "transparent",
+              color: accountType === "PUBLISHER" ? "#05070d" : "var(--color-text-secondary)",
+              transition: "all 0.15s ease",
+            }}
             onClick={() => setAccountType("PUBLISHER")}
           >
-            <span>Affiliate / Publisher</span>
-            <span className={styles.typeSub}>Promote offers & monetize traffic</span>
+            Affiliate / Publisher Sign-Up
           </button>
           <button
             type="button"
-            className={`${styles.typeBtn} ${accountType === "ADVERTISER" ? styles.typeBtnActive : ""}`}
+            style={{
+              padding: "0.6rem 1.4rem",
+              borderRadius: "9999px",
+              border: "none",
+              cursor: "pointer",
+              fontWeight: 600,
+              fontSize: "0.92rem",
+              background: accountType === "ADVERTISER" ? "var(--color-accent-violet)" : "transparent",
+              color: accountType === "ADVERTISER" ? "#fff" : "var(--color-text-secondary)",
+              transition: "all 0.15s ease",
+            }}
             onClick={() => setAccountType("ADVERTISER")}
           >
-            <span>Advertiser / Brand</span>
-            <span className={styles.typeSub}>Launch campaigns & track conversions</span>
+            Advertiser / Brand Sign-Up
           </button>
         </div>
+      </div>
 
-        <label>
-          Full Name / Contact Name *
-          <input
-            type="text"
-            required
-            autoComplete="name"
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            placeholder="e.g. Alex Rivera"
-          />
-        </label>
+      {accountType === "PUBLISHER" ? <PublisherWizard /> : <AdvertiserWizard />}
 
-        <label>
-          Work Email Address *
-          <input
-            type="email"
-            required
-            autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@company.com"
-          />
-        </label>
-
-        <label>
-          {accountType === "PUBLISHER" ? "Media Property or Network Name" : "Company or Brand Name"} (Optional)
-          <input
-            type="text"
-            value={orgName}
-            onChange={(e) => setOrgName(e.target.value)}
-            placeholder={accountType === "PUBLISHER" ? "e.g. Apex Media Group" : "e.g. CloudScale Tech"}
-          />
-        </label>
-
-        <label>
-          Password * (Minimum 8 characters)
-          <input
-            type="password"
-            required
-            minLength={8}
-            autoComplete="new-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Create a strong password"
-          />
-        </label>
-
-        {error && (
-          <div className={styles.error} role="alert">
-            {error}
-          </div>
-        )}
-
-        <button type="submit" disabled={loading}>
-          {loading ? "Creating Account…" : `Register as ${accountType === "PUBLISHER" ? "Publisher" : "Advertiser"} →`}
-        </button>
-
-        <div className={styles.footerLinks}>
-          Already registered? <Link to="/login">Sign in here</Link>
-        </div>
-      </form>
+      <div style={{ textAlign: "center", marginTop: "2rem", color: "var(--color-text-muted)", fontSize: "0.9rem" }}>
+        Already have a verified partner account?{" "}
+        <Link to="/login" style={{ color: "var(--color-accent-cyan)", fontWeight: 500 }}>
+          Sign In Here
+        </Link>
+      </div>
     </div>
   );
 }

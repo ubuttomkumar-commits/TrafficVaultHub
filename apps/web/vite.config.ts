@@ -192,6 +192,94 @@ function devMockApiPlugin(): Plugin {
 
   const mockAuditLogs: any[] = [];
 
+  const mockApplications: any[] = [
+    {
+      id: "app_pub_sample01",
+      account_type: "PUBLISHER",
+      sub_type: "INDIVIDUAL",
+      status: "PENDING_REVIEW",
+      email: "marcus.vance@apexaffiliates.com",
+      email_verified: 1,
+      phone: "+1 415 555 2671",
+      phone_verified: 1,
+      contact_method: "TELEGRAM",
+      contact_handle: "@marcus_apex",
+      first_name: "Marcus",
+      last_name: "Vance",
+      company_name: "Apex Performance Media",
+      country: "UNITED STATES",
+      city: "Austin",
+      risk_score: 15,
+      risk_flags: ["FREE_EMAIL_PROVIDER"],
+      traffic_experience_years: 4,
+      experience_level: "ADVANCED",
+      previous_networks: "MaxBounty ($40k/mo), GiddyUp ($15k/mo)",
+      traffic_sources: '["Paid Search (Google/Bing)", "Native (Taboola/Outbrain)"]',
+      traffic_description: "We run high-intent native traffic on Taboola and search arbitrage campaigns on Bing targeting Tier-1 financial SaaS and cybersecurity utility subscriptions with 2.4x ROAS.",
+      estimated_monthly_volume: "50,000–100,000 clicks / mo",
+      target_verticals: '["VPN & Cybersecurity", "Finance & Business", "B2B SaaS"]',
+      incentivized_traffic: 0,
+      created_at: new Date(Date.now() - 36000000).toISOString(),
+      updated_at: new Date(Date.now() - 36000000).toISOString(),
+    },
+    {
+      id: "app_adv_sample02",
+      account_type: "ADVERTISER",
+      sub_type: "COMPANY",
+      status: "PENDING_REVIEW",
+      email: "billing@auroracryptosec.io",
+      email_verified: 1,
+      phone: "+44 20 7946 0912",
+      phone_verified: 0,
+      contact_method: "EMAIL",
+      contact_handle: "billing@auroracryptosec.io",
+      first_name: "Elena",
+      last_name: "Rostova",
+      company_name: "Aurora Security Global Ltd",
+      business_reg_no: "UK-09823411",
+      country: "UNITED KINGDOM",
+      city: "London",
+      risk_score: 20,
+      risk_flags: ["RESTRICTED_CATEGORY_ADVERTISER"],
+      expected_monthly_budget: "$25,000–$50,000 USD",
+      tracking_preference: "S2S_POSTBACK",
+      target_verticals: '["VPN & Cybersecurity", "Finance & Business"]',
+      created_at: new Date(Date.now() - 18000000).toISOString(),
+      updated_at: new Date(Date.now() - 18000000).toISOString(),
+    }
+  ];
+
+  const mockDimensions: Record<string, any[]> = {
+    app_pub_sample01: [
+      { id: "d1", application_id: "app_pub_sample01", dimension: "EMAIL", stage: "VERIFIED", status: "PASSED", verified_at: new Date().toISOString() },
+      { id: "d2", application_id: "app_pub_sample01", dimension: "PHONE", stage: "VERIFIED", status: "PASSED", verified_at: new Date().toISOString() },
+      { id: "d3", application_id: "app_pub_sample01", dimension: "IDENTITY", stage: "DOCUMENTED", status: "IN_REVIEW", reviewer_notes: "Passport front uploaded. Clarity good." },
+      { id: "d4", application_id: "app_pub_sample01", dimension: "BUSINESS_ENTITY", stage: "SELF_DECLARED", status: "PENDING" },
+      { id: "d5", application_id: "app_pub_sample01", dimension: "DOMAIN_OWNERSHIP", stage: "SELF_DECLARED", status: "PENDING" },
+      { id: "d6", application_id: "app_pub_sample01", dimension: "TRAFFIC_EVIDENCE", stage: "DOCUMENTED", status: "IN_REVIEW", reviewer_notes: "MaxBounty ledger earnings screenshot attached." },
+      { id: "d7", application_id: "app_pub_sample01", dimension: "HISTORICAL_PERFORMANCE", stage: "DOCUMENTED", status: "IN_REVIEW" },
+      { id: "d8", application_id: "app_pub_sample01", dimension: "COMPLIANCE_REVIEW", stage: "SELF_DECLARED", status: "PENDING" }
+    ],
+    app_adv_sample02: [
+      { id: "d21", application_id: "app_adv_sample02", dimension: "EMAIL", stage: "VERIFIED", status: "PASSED", verified_at: new Date().toISOString() },
+      { id: "d22", application_id: "app_adv_sample02", dimension: "PHONE", stage: "SELF_DECLARED", status: "PENDING" },
+      { id: "d23", application_id: "app_adv_sample02", dimension: "IDENTITY", stage: "DOCUMENTED", status: "IN_REVIEW" },
+      { id: "d24", application_id: "app_adv_sample02", dimension: "BUSINESS_ENTITY", stage: "DOCUMENTED", status: "IN_REVIEW", reviewer_notes: "UK Companies House Certificate attached." },
+      { id: "d25", application_id: "app_adv_sample02", dimension: "DOMAIN_OWNERSHIP", stage: "SELF_DECLARED", status: "PENDING" },
+      { id: "d26", application_id: "app_adv_sample02", dimension: "COMPLIANCE_REVIEW", stage: "SELF_DECLARED", status: "PENDING" }
+    ]
+  };
+
+  const mockDocuments: Record<string, any[]> = {
+    app_pub_sample01: [
+      { id: "doc_01", application_id: "app_pub_sample01", doc_type: "GOV_ID_FRONT", file_name: "us_passport_front.jpg", file_size_bytes: 184000, mime_type: "image/jpeg", status: "ACCEPTED", uploaded_at: new Date(Date.now() - 35000000).toISOString() },
+      { id: "doc_02", application_id: "app_pub_sample01", doc_type: "TRAFFIC_SCREENSHOT", file_name: "maxbounty_dashboard_earnings.png", file_size_bytes: 342000, mime_type: "image/png", status: "ACCEPTED", uploaded_at: new Date(Date.now() - 34000000).toISOString() }
+    ],
+    app_adv_sample02: [
+      { id: "doc_03", application_id: "app_adv_sample02", doc_type: "BUSINESS_REGISTRATION", file_name: "companies_house_cert_incorp.pdf", file_size_bytes: 490000, mime_type: "application/pdf", status: "ACCEPTED", uploaded_at: new Date(Date.now() - 17000000).toISOString() }
+    ]
+  };
+
   return {
     name: "tvh-dev-mock-api",
     configureServer(server) {
@@ -333,6 +421,279 @@ function devMockApiPlugin(): Plugin {
         // Admin audit logs
         if (pathname === "/api/v1/admin/audit-logs") {
           return sendJson(res, 200, { data: mockAuditLogs });
+        }
+
+        // Onboarding: Publisher sign-up
+        if (pathname === "/api/v1/onboarding/publisher" && req.method === "POST") {
+          const body = await readRequestBody(req);
+          const email = (body.email || "").toLowerCase().trim();
+          const isFreeEmail = ["gmail.com", "yahoo.com", "hotmail.com", "outlook.com"].some(d => email.endsWith(d));
+          const flags: string[] = [];
+          let riskScore = 0;
+          if (isFreeEmail) {
+            flags.push("FREE_EMAIL_PROVIDER");
+            riskScore += 15;
+          }
+          if ((body.trafficDescription || "").length < 60) {
+            flags.push("VAGUE_TRAFFIC_DESCRIPTION");
+            riskScore += 25;
+          }
+          if (body.incentivizedTraffic) {
+            flags.push("INCENTIVIZED_TRAFFIC_DECLARED");
+            riskScore += 20;
+          }
+          if (body.restrictedCategoriesIntent) {
+            flags.push("RESTRICTED_CATEGORY_INTENT");
+            riskScore += 20;
+          }
+          const appId = "app_pub_" + Math.random().toString(36).substring(2, 10);
+          const newApp = {
+            id: appId,
+            account_type: "PUBLISHER",
+            sub_type: (body.subType || "INDIVIDUAL").toUpperCase(),
+            status: "PENDING_REVIEW",
+            email,
+            email_verified: 0,
+            phone: body.phone || "+1 555 0192",
+            phone_verified: 0,
+            contact_method: body.contactMethod || "TELEGRAM",
+            contact_handle: body.contactHandle || "",
+            first_name: body.firstName || "Publisher",
+            last_name: body.lastName || "Applicant",
+            company_name: body.companyName || null,
+            country: body.country || "UNITED STATES",
+            city: body.city || "San Francisco",
+            address_line1: body.addressLine1 || "",
+            postal_code: body.postalCode || "",
+            dob: body.dob || "1995-05-15",
+            website_url: body.websiteUrl || null,
+            traffic_experience_years: Number(body.trafficExperienceYears) || 2,
+            experience_level: body.experienceLevel || "INTERMEDIATE",
+            previous_networks: body.previousNetworks || "Direct / MaxBounty",
+            traffic_sources: JSON.stringify(body.trafficSources || ["Paid Search (Google/Bing)"]),
+            traffic_description: body.trafficDescription || "Detailed native & search campaigns.",
+            estimated_monthly_volume: body.estimatedMonthlyVolume || "10k-50k",
+            target_verticals: JSON.stringify(body.targetVerticals || ["VPN & Cybersecurity"]),
+            incentivized_traffic: body.incentivizedTraffic ? 1 : 0,
+            incentive_details: body.incentiveDetails || null,
+            restricted_categories_intent: body.restrictedCategoriesIntent ? 1 : 0,
+            risk_score: riskScore,
+            risk_flags: flags,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+          mockApplications.unshift(newApp);
+          mockDimensions[appId] = [
+            { id: "d_" + Math.random(), application_id: appId, dimension: "EMAIL", stage: "SELF_DECLARED", status: "PENDING" },
+            { id: "d_" + Math.random(), application_id: appId, dimension: "PHONE", stage: "SELF_DECLARED", status: "PENDING" },
+            { id: "d_" + Math.random(), application_id: appId, dimension: "IDENTITY", stage: "SELF_DECLARED", status: "PENDING" },
+            { id: "d_" + Math.random(), application_id: appId, dimension: "BUSINESS_ENTITY", stage: "SELF_DECLARED", status: "PENDING" },
+            { id: "d_" + Math.random(), application_id: appId, dimension: "DOMAIN_OWNERSHIP", stage: "SELF_DECLARED", status: "PENDING" },
+            { id: "d_" + Math.random(), application_id: appId, dimension: "TRAFFIC_EVIDENCE", stage: "SELF_DECLARED", status: "PENDING" },
+            { id: "d_" + Math.random(), application_id: appId, dimension: "HISTORICAL_PERFORMANCE", stage: "SELF_DECLARED", status: "PENDING" },
+            { id: "d_" + Math.random(), application_id: appId, dimension: "COMPLIANCE_REVIEW", stage: "SELF_DECLARED", status: "PENDING" }
+          ];
+          mockDocuments[appId] = [];
+          return sendJson(res, 201, {
+            data: {
+              applicationId: appId,
+              accountType: "PUBLISHER",
+              status: "PENDING_REVIEW",
+              riskScore,
+              riskFlags: flags,
+              message: "Your application is under manual review. Most decisions within 1–3 business days. We may contact you for a short call."
+            }
+          });
+        }
+
+        // Onboarding: Advertiser sign-up
+        if (pathname === "/api/v1/onboarding/advertiser" && req.method === "POST") {
+          const body = await readRequestBody(req);
+          const email = (body.email || "").toLowerCase().trim();
+          const isFreeEmail = ["gmail.com", "yahoo.com", "hotmail.com"].some(d => email.endsWith(d));
+          const flags: string[] = [];
+          let riskScore = 0;
+          if (isFreeEmail) {
+            flags.push("FREE_EMAIL_ADVERTISER");
+            riskScore += 20;
+          }
+          if (body.restrictedCategoriesIntent) {
+            flags.push("RESTRICTED_CATEGORY_ADVERTISER");
+            riskScore += 25;
+          }
+          const appId = "app_adv_" + Math.random().toString(36).substring(2, 10);
+          const newApp = {
+            id: appId,
+            account_type: "ADVERTISER",
+            sub_type: "COMPANY",
+            status: "PENDING_REVIEW",
+            email,
+            email_verified: 0,
+            phone: body.phone || "+1 555 9811",
+            phone_verified: 0,
+            contact_method: "EMAIL",
+            contact_handle: email,
+            first_name: body.firstName || "Brand Contact",
+            last_name: body.lastName || "Director",
+            company_name: body.companyName || "Global Brand LLC",
+            business_reg_no: body.businessRegNo || "REG-99120",
+            country: body.country || "UNITED STATES",
+            city: body.city || "New York",
+            address_line1: body.addressLine1 || "5th Avenue",
+            postal_code: body.postalCode || "10001",
+            website_url: body.websiteUrl || "https://example.com",
+            target_verticals: JSON.stringify(body.targetVerticals || ["E-commerce & Retail"]),
+            expected_monthly_budget: body.expectedMonthlyBudget || "$10,000–$50,000",
+            tracking_preference: body.trackingPreference || "S2S_POSTBACK",
+            preferred_funding_method: body.preferredFundingMethod || "WIRE",
+            restricted_categories_intent: body.restrictedCategoriesIntent ? 1 : 0,
+            risk_score: riskScore,
+            risk_flags: flags,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+          mockApplications.unshift(newApp);
+          mockDimensions[appId] = [
+            { id: "d_" + Math.random(), application_id: appId, dimension: "EMAIL", stage: "SELF_DECLARED", status: "PENDING" },
+            { id: "d_" + Math.random(), application_id: appId, dimension: "PHONE", stage: "SELF_DECLARED", status: "PENDING" },
+            { id: "d_" + Math.random(), application_id: appId, dimension: "IDENTITY", stage: "SELF_DECLARED", status: "PENDING" },
+            { id: "d_" + Math.random(), application_id: appId, dimension: "BUSINESS_ENTITY", stage: "SELF_DECLARED", status: "PENDING" },
+            { id: "d_" + Math.random(), application_id: appId, dimension: "DOMAIN_OWNERSHIP", stage: "SELF_DECLARED", status: "PENDING" },
+            { id: "d_" + Math.random(), application_id: appId, dimension: "COMPLIANCE_REVIEW", stage: "SELF_DECLARED", status: "PENDING" }
+          ];
+          mockDocuments[appId] = [];
+          return sendJson(res, 201, {
+            data: {
+              applicationId: appId,
+              accountType: "ADVERTISER",
+              status: "PENDING_REVIEW",
+              riskScore,
+              riskFlags: flags,
+              message: "Your advertiser application is under manual business & KYB verification."
+            }
+          });
+        }
+
+        // Onboarding: Document Upload
+        if (pathname === "/api/v1/onboarding/documents" && req.method === "POST") {
+          const body = await readRequestBody(req);
+          const appId = body.applicationId || "app_pub_sample01";
+          const docId = "doc_" + Math.random().toString(36).substring(2, 9);
+          const newDoc = {
+            id: docId,
+            application_id: appId,
+            doc_type: body.docType || "GOV_ID_FRONT",
+            file_name: body.fileName || "uploaded_id.jpg",
+            file_size_bytes: Number(body.fileSizeBytes) || 240000,
+            mime_type: body.mimeType || "image/jpeg",
+            status: "ACCEPTED",
+            uploaded_at: new Date().toISOString(),
+          };
+          if (!mockDocuments[appId]) mockDocuments[appId] = [];
+          mockDocuments[appId].unshift(newDoc);
+          if (mockDimensions[appId]) {
+            const targetDim = body.docType?.includes("GOV_ID") || body.docType === "SELFIE_WITH_ID"
+              ? "IDENTITY"
+              : body.docType === "BUSINESS_REGISTRATION"
+              ? "BUSINESS_ENTITY"
+              : "TRAFFIC_EVIDENCE";
+            const match = mockDimensions[appId].find(d => d.dimension === targetDim);
+            if (match) {
+              match.stage = "DOCUMENTED";
+              match.status = "IN_REVIEW";
+            }
+          }
+          return sendJson(res, 201, { data: newDoc });
+        }
+
+        // Onboarding: Status check
+        if (pathname === "/api/v1/onboarding/status") {
+          const appId = searchParams.get("applicationId") || mockApplications[0]?.id;
+          const found = mockApplications.find(a => a.id === appId) || mockApplications[0];
+          return sendJson(res, 200, {
+            data: {
+              application: found,
+              dimensions: mockDimensions[found?.id] || [],
+              documents: mockDocuments[found?.id] || [],
+              auditHistory: [
+                { action: "SUBMIT", notes: "Application submitted and queued for verification", created_at: found?.created_at },
+                { action: "DOC_REVIEWED", notes: "Initial risk screening completed", created_at: new Date().toISOString() }
+              ]
+            }
+          });
+        }
+
+        // Onboarding: Verify Email & Phone
+        if (pathname === "/api/v1/onboarding/verify-email" && req.method === "POST") {
+          const body = await readRequestBody(req);
+          const found = mockApplications.find(a => a.id === body.applicationId);
+          if (found) found.email_verified = 1;
+          if (found && mockDimensions[found.id]) {
+            const match = mockDimensions[found.id].find(d => d.dimension === "EMAIL");
+            if (match) { match.stage = "VERIFIED"; match.status = "PASSED"; }
+          }
+          return sendJson(res, 200, { data: { ok: true, emailVerified: true } });
+        }
+
+        if (pathname === "/api/v1/onboarding/verify-phone" && req.method === "POST") {
+          const body = await readRequestBody(req);
+          const found = mockApplications.find(a => a.id === body.applicationId);
+          if (found) found.phone_verified = 1;
+          if (found && mockDimensions[found.id]) {
+            const match = mockDimensions[found.id].find(d => d.dimension === "PHONE");
+            if (match) { match.stage = "VERIFIED"; match.status = "PASSED"; }
+          }
+          return sendJson(res, 200, { data: { ok: true, phoneVerified: true } });
+        }
+
+        // Admin: List Onboarding Applications
+        if (pathname === "/api/v1/onboarding/admin/applications") {
+          const st = searchParams.get("status");
+          const tp = searchParams.get("accountType");
+          let list = mockApplications;
+          if (st && st !== "ALL") list = list.filter(a => a.status === st);
+          if (tp && tp !== "ALL") list = list.filter(a => a.account_type === tp);
+          return sendJson(res, 200, { data: list });
+        }
+
+        // Admin: Get Single Application
+        const singleAppMatch = pathname.match(/^\/api\/v1\/onboarding\/admin\/applications\/([^/]+)$/);
+        if (singleAppMatch && req.method === "GET") {
+          const appId = singleAppMatch[1];
+          const found = mockApplications.find(a => a.id === appId);
+          return sendJson(res, 200, {
+            data: {
+              application: found,
+              dimensions: mockDimensions[appId] || [],
+              documents: mockDocuments[appId] || [],
+              auditHistory: [
+                { action: "SUBMIT", notes: "Initial application received", created_at: found?.created_at }
+              ]
+            }
+          });
+        }
+
+        // Admin: Decision on Application
+        const decisionAppMatch = pathname.match(/^\/api\/v1\/onboarding\/admin\/applications\/([^/]+)\/decision$/);
+        if (decisionAppMatch && req.method === "POST") {
+          const appId = decisionAppMatch[1];
+          const body = await readRequestBody(req);
+          const found = mockApplications.find(a => a.id === appId);
+          if (found) {
+            if (body.decision === "APPROVE") found.status = "APPROVED";
+            else if (body.decision === "PROBATIONARY_APPROVE") found.status = "PROBATIONARY_APPROVED";
+            else if (body.decision === "REJECT") found.status = "REJECTED";
+            else if (body.decision === "REQUEST_DOCS") found.status = "DOCS_REQUESTED";
+            else if (body.decision === "SCHEDULE_CALL") found.status = "INTERVIEW_SCHEDULED";
+            found.decision_reason_code = body.reasonCode || "KYC_REVIEW";
+            found.decision_notes = body.notes || "";
+            found.conditional_caps = body.conditionalCaps ? JSON.stringify(body.conditionalCaps) : null;
+            found.interview_details = body.interviewDetails ? JSON.stringify(body.interviewDetails) : null;
+            if (body.decision === "APPROVE" && mockDimensions[appId]) {
+              mockDimensions[appId].forEach(d => { d.stage = "VERIFIED"; d.status = "PASSED"; });
+            }
+          }
+          return sendJson(res, 200, { data: { id: appId, status: found ? found.status : "APPROVED" } });
         }
 
         // Categories

@@ -114,6 +114,9 @@ export function AdminDashboardPage() {
 
       {/* QUICK WORKFLOW ACCESS PILLS */}
       <div className={styles.quickActions}>
+        <Link to="/admin/applications" className={styles.actionPill} style={{ borderColor: "var(--color-accent-cyan)", color: "var(--color-accent-cyan)" }}>
+          🪪 KYC/KYB Partner Verification Queue
+        </Link>
         <Link to="/compliance" className={styles.actionPill}>
           ⚖️ Compliance Review Queue
         </Link>

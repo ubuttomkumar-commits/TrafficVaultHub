@@ -16,6 +16,7 @@ const NAV = [
   { to: "/offer-caps", label: "Click caps" },
   { to: "/campaign-studio", label: "Campaign studio" },
   { to: "/compliance", label: "Compliance" },
+  { to: "/verification", label: "Verification" },
   { to: "/payouts", label: "Payouts" },
   { to: "/admin", label: "Admin" },
   { to: "/health", label: "Health" },

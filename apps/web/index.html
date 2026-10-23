@@ -2,6 +2,24 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      (function() {
+        try {
+          var _origFetch = window.fetch;
+          var _currentFetch = typeof _origFetch === "function" ? _origFetch.bind(window) : _origFetch;
+          Object.defineProperty(window, "fetch", {
+            get: function() {
+              return _currentFetch;
+            },
+            set: function(fn) {
+              _currentFetch = fn;
+            },
+            configurable: true,
+            enumerable: true
+          });
+        } catch (e) {}
+      })();
+    </script>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>TrafficVaultHub — The CPA Network That Shows Its Work</title>
