@@ -370,17 +370,20 @@ async function ensureAuthTables(db: D1Database) {
       db.prepare(`
         CREATE TABLE IF NOT EXISTS roles (
           id          TEXT PRIMARY KEY NOT NULL,
+          key         TEXT NOT NULL,
           name        TEXT NOT NULL,
-          description TEXT
+          description TEXT,
+          is_system   INTEGER NOT NULL DEFAULT 0,
+          is_owner    INTEGER NOT NULL DEFAULT 0
         )
       `),
       db.prepare(`
-        INSERT OR IGNORE INTO roles (id, name, description) VALUES
-          ('00000000-0000-4000-8000-000000000101', 'Super Administrator', 'Full platform control'),
-          ('00000000-0000-4000-8000-000000000102', 'Platform Operator', 'Operational and compliance review'),
-          ('00000000-0000-4000-8000-000000000103', 'Platform Finance', 'Financial and payout control'),
-          ('00000000-0000-4000-8000-000000000201', 'Affiliate Owner', 'Primary affiliate account administrator'),
-          ('00000000-0000-4000-8000-000000000301', 'Advertiser Owner', 'Primary advertiser account administrator')
+        INSERT OR IGNORE INTO roles (id, key, name, description, is_system, is_owner) VALUES
+          ('00000000-0000-4000-8000-000000000101', 'SUPER_ADMIN', 'Super Admin', 'Full platform control', 1, 1),
+          ('00000000-0000-4000-8000-000000000102', 'OPERATIONS_ADMIN', 'Operations Admin', 'Operational and compliance review', 1, 0),
+          ('00000000-0000-4000-8000-000000000103', 'FINANCE_MANAGER', 'Finance Manager', 'Financial and payout control', 1, 0),
+          ('00000000-0000-4000-8000-000000000201', 'ADVERTISER_OWNER', 'Advertiser Owner', 'Primary advertiser account administrator', 1, 1),
+          ('00000000-0000-4000-8000-000000000301', 'AFFILIATE_OWNER', 'Affiliate Owner', 'Primary affiliate account administrator', 1, 1)
       `),
     ]);
   } catch (err) {
@@ -471,8 +474,8 @@ authRoutes.post("/register", rateLimit({ keyPrefix: "register", limit: 10, windo
   const isAdvertiser = rawType === "ADVERTISER";
   const orgType = isAdvertiser ? "ADVERTISER" : "AFFILIATE";
   const roleId = isAdvertiser
-    ? "00000000-0000-4000-8000-000000000301"
-    : "00000000-0000-4000-8000-000000000201";
+    ? "00000000-0000-4000-8000-000000000201"
+    : "00000000-0000-4000-8000-000000000301";
 
   // Check duplicate email
   const existing = await c.env.DB.prepare(
@@ -535,14 +538,16 @@ authRoutes.post("/register", rateLimit({ keyPrefix: "register", limit: 10, windo
     if (isAdvertiser) {
       batchOps.push(
         c.env.DB.prepare(
-          `INSERT INTO advertiser_profiles (id, organization_id, status) VALUES (?, ?, 'ACTIVE')`
-        ).bind(profileId, orgId)
+          `INSERT INTO advertiser_profiles (id, organization_id, status, company_name)
+           VALUES (?, ?, 'ACTIVE', ?)`
+        ).bind(profileId, orgId, orgName)
       );
     } else {
       batchOps.push(
         c.env.DB.prepare(
-          `INSERT INTO affiliate_profiles (id, organization_id, status) VALUES (?, ?, 'ACTIVE')`
-        ).bind(profileId, orgId)
+          `INSERT INTO affiliate_profiles (id, organization_id, status, display_name)
+           VALUES (?, ?, 'ACTIVE', ?)`
+        ).bind(profileId, orgId, displayName)
       );
     }
 
@@ -596,7 +601,7 @@ authRoutes.post("/register", rateLimit({ keyPrefix: "register", limit: 10, windo
       {
         error: {
           code: "registration_failed",
-          message: "Unable to complete registration. Please try again.",
+          message: err instanceof Error ? err.message : "Unable to complete registration. Please try again.",
           correlationId,
         },
       },

@@ -151,6 +151,47 @@ function devMockApiPlugin(): Plugin {
     off_vpn_shield_01: { daily: 5000, total: 100000, currentDaily: 1420, currentTotal: 31200 },
   };
 
+  const mockUsers = [
+    {
+      id: "usr_admin_01",
+      email: "admin@trafficvaulthub.local",
+      display_name: "Platform Admin",
+      status: "ACTIVE",
+      created_at: new Date(Date.now() - 864000000).toISOString(),
+      last_login_at: new Date().toISOString(),
+      organization_id: "org_platform_01",
+      organization_name: "TrafficVaultHub Platform",
+      organization_type: "PLATFORM",
+      role_name: "Super Admin",
+    },
+    {
+      id: "usr_pub_01",
+      email: "partner@trafficvaulthub.com",
+      display_name: "Apex Media Partners",
+      status: "ACTIVE",
+      created_at: new Date(Date.now() - 432000000).toISOString(),
+      last_login_at: new Date(Date.now() - 3600000).toISOString(),
+      organization_id: "org_traffic_vault",
+      organization_name: "TrafficVault Media Partners",
+      organization_type: "AFFILIATE",
+      role_name: "Affiliate Owner",
+    },
+    {
+      id: "usr_adv_01",
+      email: "advertiser@globalbrands.io",
+      display_name: "Global Brands Digital",
+      status: "ACTIVE",
+      created_at: new Date(Date.now() - 216000000).toISOString(),
+      last_login_at: new Date(Date.now() - 7200000).toISOString(),
+      organization_id: "org_adv_01",
+      organization_name: "Global Brands Direct",
+      organization_type: "ADVERTISER",
+      role_name: "Advertiser Owner",
+    },
+  ];
+
+  const mockAuditLogs: any[] = [];
+
   return {
     name: "tvh-dev-mock-api",
     configureServer(server) {
@@ -176,20 +217,122 @@ function devMockApiPlugin(): Plugin {
           });
         }
 
+        // Auth register
+        if (pathname === "/api/v1/auth/register" && req.method === "POST") {
+          const body = await readRequestBody(req);
+          const rawType = (body.accountType || "PUBLISHER").toUpperCase();
+          const isAdv = rawType === "ADVERTISER";
+          const newUser = {
+            id: "usr_" + Math.random().toString(36).substring(2, 9),
+            email: body.email || "newuser@trafficvaulthub.local",
+            display_name: body.displayName || "New User",
+            status: "ACTIVE",
+            created_at: new Date().toISOString(),
+            last_login_at: new Date().toISOString(),
+            organization_id: "org_" + Math.random().toString(36).substring(2, 9),
+            organization_name: body.organizationName || (isAdv ? "Brand Operations" : "Affiliate Media"),
+            organization_type: isAdv ? "ADVERTISER" : "AFFILIATE",
+            role_name: isAdv ? "Advertiser Owner" : "Affiliate Owner",
+          };
+          mockUsers.unshift(newUser);
+          return sendJson(res, 201, {
+            data: {
+              token: "tvh_token_" + Math.random().toString(36).substring(2, 12),
+              expiresAt: new Date(Date.now() + 7 * 86400000).toISOString(),
+              user: {
+                id: newUser.id,
+                email: newUser.email,
+                displayName: newUser.display_name,
+                accountType: rawType,
+                organizationId: newUser.organization_id,
+              },
+              organization: {
+                id: newUser.organization_id,
+                name: newUser.organization_name,
+                type: newUser.organization_type,
+                slug: "org-" + newUser.id,
+              },
+            },
+          });
+        }
+
         // Auth login
         if (pathname === "/api/v1/auth/login" && req.method === "POST") {
           const body = await readRequestBody(req);
+          const email = (body.email || "").toLowerCase();
+          const isAdmin = email.includes("admin");
           return sendJson(res, 200, {
             data: {
               token: "tvh_live_session_token",
               user: {
-                id: "usr_publisher_demo",
+                id: isAdmin ? "usr_admin_01" : "usr_pub_01",
                 email: body.email || "partner@trafficvaulthub.com",
-                role: "publisher",
-                organizationId: "org_traffic_vault"
+                role: isAdmin ? "super_admin" : "publisher",
+                organizationId: isAdmin ? "org_platform_01" : "org_traffic_vault"
               }
             }
           });
+        }
+
+        // Admin overview
+        if (pathname === "/api/v1/admin/overview") {
+          return sendJson(res, 200, {
+            data: {
+              users: { total: mockUsers.length },
+              organizations: {
+                AFFILIATE: mockUsers.filter(u => u.organization_type === "AFFILIATE").length,
+                ADVERTISER: mockUsers.filter(u => u.organization_type === "ADVERTISER").length,
+                PLATFORM: 1
+              },
+              offers: { LIVE: 4, DRAFT: 1 },
+              conversions: {
+                APPROVED: { count: 95, totalMinor: 184500 },
+                PENDING: { count: 19, totalMinor: 38000 }
+              },
+              complianceCases: [
+                { status: "OPEN", count: 2 },
+                { status: "RESOLVED", count: 5 }
+              ],
+              payouts: [
+                { status: "PROCESSED", count: 1, total_minor: 50000 },
+                { status: "PENDING", count: 1, total_minor: 75000 }
+              ],
+              journalEntries: []
+            }
+          });
+        }
+
+        // Admin users list
+        if (pathname === "/api/v1/admin/users") {
+          const q = (searchParams.get("query") || "").toLowerCase();
+          const filtered = q
+            ? mockUsers.filter(u => u.email.toLowerCase().includes(q) || (u.display_name && u.display_name.toLowerCase().includes(q)))
+            : mockUsers;
+          return sendJson(res, 200, { data: filtered });
+        }
+
+        // Admin user status patch
+        const userStatusMatch = pathname.match(/^\/api\/v1\/admin\/users\/([^/]+)\/status$/);
+        if (userStatusMatch && req.method === "PATCH") {
+          const userId = userStatusMatch[1];
+          const body = await readRequestBody(req);
+          const found = mockUsers.find(u => u.id === userId);
+          if (found) {
+            found.status = body.status || "ACTIVE";
+            mockAuditLogs.unshift({
+              id: "aud_" + Math.random().toString(36).substring(2, 9),
+              action: `USER_STATUS_${found.status}`,
+              resource_id: userId,
+              details: { reason: body.reason },
+              created_at: new Date().toISOString()
+            });
+          }
+          return sendJson(res, 200, { data: { userId, status: found ? found.status : body.status } });
+        }
+
+        // Admin audit logs
+        if (pathname === "/api/v1/admin/audit-logs") {
+          return sendJson(res, 200, { data: mockAuditLogs });
         }
 
         // Categories
@@ -467,6 +610,6 @@ export default defineConfig({
   },
   build: {
     outDir: "dist",
-    sourcemap: true
+    sourcemap: false
   }
 });
