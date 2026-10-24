@@ -10,39 +10,35 @@ import { apiUrl } from "../lib/api";
 import styles from "./LandingPage.module.css";
 
 interface CmsData {
-  heroTagline: string;
-  heroHeadline: string;
-  heroSubtext: string;
-  primaryCtaText: string;
-  primaryCtaLink: string;
-  secondaryCtaText: string;
-  secondaryCtaLink: string;
-  trustBullet1: string;
-  trustBullet2: string;
-  trustBullet3: string;
-  trustBullet4: string;
+  heroTagline?: string;
+  heroHeadline?: string;
+  heroSubheadline?: string;
+  heroSubtext?: string;
+  primaryCtaText?: string;
+  primaryCtaLink?: string;
+  secondaryCtaText?: string;
+  secondaryCtaLink?: string;
+  ctaPrimaryText?: string;
+  ctaPrimaryLink?: string;
+  ctaSecondaryText?: string;
+  ctaSecondaryLink?: string;
+  trustBullet1?: string;
+  trustBullet2?: string;
+  trustBullet3?: string;
+  trustBullet4?: string;
   customNotice?: string | null;
+  siteName?: string;
+  tagline?: string;
+  logoUrl?: string;
 }
 
 export function LandingPage() {
   const [themeMode, setThemeMode] = useState<"dark" | "cyber">("cyber");
   const [cms, setCms] = useState<CmsData | null>(null);
   const [announcement, setAnnouncement] = useState<any>(null);
-  const [maintenance, setMaintenance] = useState<{ isEnabled: boolean; headline: string } | null>(null);
-  const [isOperator, setIsOperator] = useState(false);
+  const [maintenance, setMaintenance] = useState<{ isEnabled: boolean; headline: string; message?: string; estimatedDuration?: string } | null>(null);
 
   useEffect(() => {
-    // Check if current user is an operator
-    const userRaw = localStorage.getItem("tvh_user");
-    if (userRaw) {
-      try {
-        const u = JSON.parse(userRaw);
-        if (u.role === "admin" || u.role === "platform_operator" || (u.email && u.email.includes("admin"))) {
-          setIsOperator(true);
-        }
-      } catch {}
-    }
-
     // Fetch CMS
     fetch(apiUrl("/api/v1/cms/landing"))
       .then((r) => r.json())
@@ -117,21 +113,32 @@ export function LandingPage() {
         </div>
       )}
 
-      {/* Maintenance Notice Banner */}
+      {/* Full Maintenance Mode Gateway */}
       {maintenance?.isEnabled && (
-        <div
-          style={{
-            background: "rgba(234, 179, 8, 0.15)",
-            borderBottom: "1px solid rgba(234, 179, 8, 0.35)",
-            color: "#fde047",
-            padding: "0.6rem 1rem",
-            textAlign: "center",
-            fontSize: "0.85rem",
-            position: "relative",
-            zIndex: 99,
-          }}
-        >
-          ⚠️ <strong>System Maintenance Active:</strong> {maintenance.headline}. All tracking and postback redirects continue without interruption.
+        <div style={{ position: "fixed", inset: 0, zIndex: 99999, background: "#05070d", display: "flex", alignItems: "center", justifyContent: "center", padding: "1.5rem" }}>
+          <div style={{ maxWidth: "560px", width: "100%", background: "rgba(10, 15, 29, 0.95)", border: "1px solid rgba(239, 68, 68, 0.35)", borderRadius: "12px", padding: "2.5rem 2rem", textAlign: "center", boxShadow: "0 25px 60px rgba(0,0,0,0.85)" }}>
+            <div style={{ fontSize: "2.75rem", marginBottom: "0.75rem" }}>🛡️</div>
+            <div style={{ display: "inline-block", background: "rgba(239, 68, 68, 0.12)", color: "#f87171", border: "1px solid rgba(239, 68, 68, 0.3)", padding: "0.25rem 0.75rem", borderRadius: "999px", fontSize: "0.75rem", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "1rem" }}>
+              Scheduled System Maintenance Active
+            </div>
+            <h1 style={{ fontSize: "1.45rem", fontWeight: 700, color: "#f8fafc", margin: "0 0 0.75rem 0" }}>
+              {maintenance.headline || "Scheduled Network Synchronization"}
+            </h1>
+            <p style={{ color: "#94a3b8", fontSize: "0.9rem", lineHeight: 1.6, margin: "0 0 1.25rem 0" }}>
+              {maintenance.message || "TrafficVaultHub is performing scheduled network synchronization and ledger upgrades. Public access is temporarily gated."}
+            </p>
+            <div style={{ display: "inline-block", background: "rgba(255, 255, 255, 0.05)", border: "1px solid rgba(255, 255, 255, 0.1)", padding: "0.4rem 0.85rem", borderRadius: "6px", fontSize: "0.78rem", color: "#38bdf8", marginBottom: "1.5rem" }}>
+              Estimated Duration: {maintenance.estimatedDuration || "30 minutes"}
+            </div>
+            <div style={{ padding: "0.75rem 1rem", background: "rgba(16, 185, 129, 0.08)", border: "1px solid rgba(16, 185, 129, 0.25)", borderRadius: "6px", fontSize: "0.8rem", color: "#34d399", margin: "0 auto 1.5rem" }}>
+              ✓ Authoritative click tracking redirects and server-to-server (S2S) postbacks continue without interruption.
+            </div>
+            <div>
+              <Link to="/admin/login" style={{ color: "#64748b", fontSize: "0.78rem", textDecoration: "none" }}>
+                Platform Operator Sign In ↗
+              </Link>
+            </div>
+          </div>
         </div>
       )}
 
@@ -157,12 +164,16 @@ export function LandingPage() {
       <header className={styles.topNav}>
         <div className={styles.topInner}>
           <Link to="/" className={styles.brand} aria-label="TrafficVaultHub home">
-            <div className={styles.logoIcon}>
-              <span className={styles.logoV}>V</span>
-            </div>
+            {cms?.logoUrl ? (
+              <img src={cms.logoUrl} alt={cms.siteName || "TrafficVaultHub"} style={{ height: "30px", maxWidth: "140px", objectFit: "contain" }} />
+            ) : (
+              <div className={styles.logoIcon}>
+                <span className={styles.logoV}>V</span>
+              </div>
+            )}
             <div className={styles.brandCol}>
-              <span className={styles.brandName}>TrafficVaultHub</span>
-              <span className={styles.brandSub}>Universal CPA Network</span>
+              <span className={styles.brandName}>{cms?.siteName || "TrafficVaultHub"}</span>
+              <span className={styles.brandSub}>{cms?.tagline || "Universal CPA Network"}</span>
             </div>
           </Link>
 
@@ -173,22 +184,6 @@ export function LandingPage() {
             <a href="#problems" className={styles.navItem}>Advertisers</a>
             <Link to="/conversion-confidence" className={styles.navItem}>Resources ▾</Link>
             <a href="#trust" className={styles.navItem}>About ▾</a>
-            {isOperator && (
-              <Link
-                to="/admin"
-                className={styles.navItem}
-                style={{
-                  color: "var(--tvh-cyan)",
-                  fontWeight: 600,
-                  border: "1px solid rgba(6, 182, 212, 0.3)",
-                  padding: "0.25rem 0.6rem",
-                  borderRadius: "4px",
-                  background: "rgba(6, 182, 212, 0.08)",
-                }}
-              >
-                Super Admin
-              </Link>
-            )}
           </nav>
 
           <div className={styles.navActions}>
@@ -231,15 +226,15 @@ export function LandingPage() {
                 )}
               </h1>
               <p className={styles.heroSubtext}>
-                {cms?.heroSubtext ||
+                {cms?.heroSubheadline || cms?.heroSubtext ||
                   "Discover relevant offers, track conversions with greater transparency, and manage affiliate campaigns with stronger financial and fraud controls."}
               </p>
               <div className={styles.heroCtas}>
-                <Link to={cms?.primaryCtaLink || "/signup?role=publisher"} className={styles.ctaPublisher}>
-                  {cms?.primaryCtaText || "Start as Publisher →"}
+                <Link to={cms?.ctaPrimaryLink || cms?.primaryCtaLink || "/signup?role=publisher"} className={styles.ctaPublisher}>
+                  {cms?.ctaPrimaryText || cms?.primaryCtaText || "Start as Publisher →"}
                 </Link>
-                <Link to={cms?.secondaryCtaLink || "/signup?role=advertiser"} className={styles.ctaAdvertiser}>
-                  {cms?.secondaryCtaText || "Start as Advertiser →"}
+                <Link to={cms?.ctaSecondaryLink || cms?.secondaryCtaLink || "/signup?role=advertiser"} className={styles.ctaAdvertiser}>
+                  {cms?.ctaSecondaryText || cms?.secondaryCtaText || "Start as Advertiser →"}
                 </Link>
               </div>
 
@@ -531,12 +526,16 @@ export function LandingPage() {
         <div className={styles.footerInner}>
           <div className={styles.footerTop}>
             <Link to="/" className={styles.brand}>
-              <div className={styles.logoIcon}>
-                <span className={styles.logoV}>V</span>
-              </div>
+              {cms?.logoUrl ? (
+                <img src={cms.logoUrl} alt={cms.siteName || "TrafficVaultHub"} style={{ height: "26px", maxWidth: "120px", objectFit: "contain" }} />
+              ) : (
+                <div className={styles.logoIcon}>
+                  <span className={styles.logoV}>V</span>
+                </div>
+              )}
               <div className={styles.brandCol}>
-                <span className={styles.brandName}>TrafficVaultHub</span>
-                <span className={styles.brandSub}>Universal CPA Network</span>
+                <span className={styles.brandName}>{cms?.siteName || "TrafficVaultHub"}</span>
+                <span className={styles.brandSub}>{cms?.tagline || "Universal CPA Network"}</span>
               </div>
             </Link>
 

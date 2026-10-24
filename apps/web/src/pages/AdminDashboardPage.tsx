@@ -77,12 +77,6 @@ export function AdminDashboardPage() {
   const [targetModerationUser, setTargetModerationUser] = useState<AdminUser | null>(null);
   const [moderating, setModerating] = useState(false);
 
-  // Direct login in permission-denied state
-  const [loginEmail, setLoginEmail] = useState("admin@trafficvaulthub.local");
-  const [loginPassword, setLoginPassword] = useState("Password123!");
-  const [authError, setAuthError] = useState<string | null>(null);
-  const [loggingIn, setLoggingIn] = useState(false);
-
   const token = localStorage.getItem("tvh_token");
 
   async function loadAdminData(silent = false) {
@@ -128,51 +122,6 @@ export function AdminDashboardPage() {
   useEffect(() => {
     void loadAdminData();
   }, [token]);
-
-  async function handleQuickOperatorAuth() {
-    setLoggingIn(true);
-    setAuthError(null);
-    try {
-      const res = await fetch(apiUrl("/api/v1/auth/login"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: "admin@trafficvaulthub.local", password: "Password123!" }),
-      });
-      const body = await res.json();
-      if (!res.ok) throw new Error(body?.error?.message ?? "Authentication failed");
-      const newToken = body?.data?.token as string;
-      localStorage.setItem("tvh_token", newToken);
-      localStorage.setItem("tvh_user", JSON.stringify(body?.data?.user ?? { role: "super_admin", email: "admin@trafficvaulthub.local" }));
-      window.location.reload();
-    } catch (err) {
-      setAuthError(err instanceof Error ? err.message : "Failed to establish operator session");
-    } finally {
-      setLoggingIn(false);
-    }
-  }
-
-  async function handleDirectLogin(e: React.FormEvent) {
-    e.preventDefault();
-    setLoggingIn(true);
-    setAuthError(null);
-    try {
-      const res = await fetch(apiUrl("/api/v1/auth/login"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: loginEmail, password: loginPassword }),
-      });
-      const body = await res.json();
-      if (!res.ok) throw new Error(body?.error?.message ?? "Invalid operator credentials");
-      const newToken = body?.data?.token as string;
-      localStorage.setItem("tvh_token", newToken);
-      localStorage.setItem("tvh_user", JSON.stringify(body?.data?.user ?? {}));
-      window.location.reload();
-    } catch (err) {
-      setAuthError(err instanceof Error ? err.message : "Login failed");
-    } finally {
-      setLoggingIn(false);
-    }
-  }
 
   async function executeUserStatusToggle() {
     if (!token || !targetModerationUser) return;
@@ -251,47 +200,13 @@ export function AdminDashboardPage() {
             The Network Operations Cockpit provides authoritative access to KYC/KYB reviews, financial reserves, tenant moderation, and ledger parity. Active operator credentials are required.
           </p>
 
-          <button
-            type="button"
+          <Link
+            to="/admin/login"
             className={styles.quickAuthButton}
-            onClick={() => void handleQuickOperatorAuth()}
-            disabled={loggingIn}
+            style={{ textDecoration: "none", display: "inline-block", textAlign: "center" }}
           >
-            {loggingIn ? "Establishing Operator Session..." : "Authorize Operator Preview Session"}
-          </button>
-
-          <div className={styles.authDivider}>or sign in with operator account</div>
-
-          <form onSubmit={(e) => void handleDirectLogin(e)} className={styles.authLoginForm}>
-            {authError && (
-              <div style={{ color: "#f87171", fontSize: "0.82rem", background: "rgba(244,63,94,0.1)", padding: "0.5rem 0.75rem", borderRadius: "4px" }}>
-                {authError}
-              </div>
-            )}
-            <div>
-              <label className={styles.formLabel}>Operator Email</label>
-              <input
-                type="email"
-                value={loginEmail}
-                onChange={(e) => setLoginEmail(e.target.value)}
-                className={styles.formInput}
-                required
-              />
-            </div>
-            <div>
-              <label className={styles.formLabel}>Master Password</label>
-              <input
-                type="password"
-                value={loginPassword}
-                onChange={(e) => setLoginPassword(e.target.value)}
-                className={styles.formInput}
-                required
-              />
-            </div>
-            <button type="submit" disabled={loggingIn} className={styles.btnSubmitLogin}>
-              {loggingIn ? "Authenticating…" : "Sign In to Operations Console"}
-            </button>
-          </form>
+            Sign In to Operations Console →
+          </Link>
 
           <div style={{ marginTop: "1.5rem", fontSize: "0.82rem" }}>
             <Link to="/" style={{ color: "var(--color-text-muted)" }}>

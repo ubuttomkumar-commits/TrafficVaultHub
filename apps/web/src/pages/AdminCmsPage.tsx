@@ -125,6 +125,22 @@ export function AdminCmsPage() {
     }
   }
 
+  function handleLogoFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      alert("Logo image file size must be less than 2MB");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        setContent((prev) => ({ ...prev, logoUrl: reader.result as string }));
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+
   return (
     <div className={styles.container}>
       <AdminNav />
@@ -186,14 +202,45 @@ export function AdminCmsPage() {
             </div>
 
             <div className={styles.formField}>
-              <label className={styles.label}>Custom Brand Logo URL (Optional)</label>
-              <input
-                type="text"
-                placeholder="https://... or data:image/svg+xml;base64,... (leave empty for default obsidian vault logo)"
-                className={styles.input}
-                value={content.logoUrl || ""}
-                onChange={(e) => setContent({ ...content, logoUrl: e.target.value })}
-              />
+              <label className={styles.label}>Brand Logo (Upload Image File or Enter URL)</label>
+              <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", marginBottom: "0.5rem" }}>
+                <input
+                  type="text"
+                  placeholder="https://... or data:image/... (leave empty for default obsidian vault logo)"
+                  className={styles.input}
+                  style={{ flex: 1 }}
+                  value={content.logoUrl || ""}
+                  onChange={(e) => setContent({ ...content, logoUrl: e.target.value })}
+                />
+                <label
+                  className={styles.btnSecondary}
+                  style={{ cursor: "pointer", whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: "0.4rem" }}
+                >
+                  📁 Upload File
+                  <input
+                    type="file"
+                    accept="image/*"
+                    style={{ display: "none" }}
+                    onChange={handleLogoFileUpload}
+                  />
+                </label>
+                {content.logoUrl && (
+                  <button
+                    type="button"
+                    className={styles.btnDanger}
+                    style={{ padding: "0.45rem 0.75rem", fontSize: "0.75rem" }}
+                    onClick={() => setContent({ ...content, logoUrl: "" })}
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+              {content.logoUrl && (
+                <div style={{ display: "flex", alignItems: "center", gap: "1rem", background: "rgba(0,0,0,0.4)", padding: "0.6rem 0.85rem", borderRadius: "6px", border: "1px solid rgba(255,255,255,0.08)" }}>
+                  <span style={{ fontSize: "0.78rem", color: "#94a3b8" }}>Live Logo Preview:</span>
+                  <img src={content.logoUrl} alt="Logo Preview" style={{ height: "28px", maxWidth: "140px", objectFit: "contain" }} />
+                </div>
+              )}
             </div>
 
             <div className={styles.formField}>
